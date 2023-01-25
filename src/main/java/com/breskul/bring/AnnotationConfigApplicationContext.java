@@ -1,9 +1,15 @@
 package com.breskul.bring;
 
+import com.breskul.bring.annotations.Component;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.exceptions.NuSuchBeanConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +32,22 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     public AnnotationConfigApplicationContext(String packageName) {
         Objects.requireNonNull(packageName);
         this.packagePath = packageName;
-        scan();
+        initiateContext();
     }
 
     /**
-     * Scanning a package for classes or methods annotated by @Component and @Bean
+     * Scanning a package for classes annotated by {@link Component}.
+     * It creates an instances of such classes and put them into context.
      */
-    private void scan() {
+    @SneakyThrows
+    private void initiateContext() {
+        Reflections reflections = new Reflections(packagePath, Scanners.TypesAnnotated);
+
+        for (Class<?> bean : reflections.getTypesAnnotatedWith(Component.class)) {
+            String beanCustomName = bean.getAnnotation(Component.class).value();
+            String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
+            context.put(beanName, bean.getDeclaredConstructor().newInstance());
+        }
     }
 
     /**
@@ -57,7 +72,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @return Predicate - filter isAssignableFrom for values types
      */
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {
-        return (entry) -> entry.getValue().getClass().isAssignableFrom(beanType);
+        return entry -> beanType.isAssignableFrom(entry.getValue().getClass());
     }
 
     /**
