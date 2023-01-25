@@ -20,13 +20,12 @@ import java.util.stream.Collectors;
  */
 public class AnnotationConfigApplicationContext implements ApplicationContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(BringApplication.class);
-    private final Map<String, Object> context;
-    private final String packageName;
+    private final Map<String, Object> context = new ConcurrentHashMap<>();
+    private final String packagePath;
 
     public AnnotationConfigApplicationContext(String packageName) {
         Objects.requireNonNull(packageName);
-        this.context = new ConcurrentHashMap<>();
-        this.packageName = packageName;
+        this.packagePath = packageName;
         scan();
     }
 
@@ -71,12 +70,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private <T> T createInstance(Class<T> beanType) {
         var constructor = Arrays.stream(beanType.getConstructors())
                 .findFirst()
-                .orElseThrow(NuSuchBeanConstructor::new);
+                .orElseThrow(() -> {
+                    throw new NuSuchBeanConstructor("Bean type: " + beanType.getName());
+                });
         try {
-            T bean = beanType.cast(constructor.newInstance());
-            return bean;
+            return beanType.cast(constructor.newInstance());
         } catch (Exception ex) {
-            throw new BeanInitializingException();
+            throw new BeanInitializingException("Bean type: " + beanType.getName());
         }
     }
 
@@ -84,11 +84,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
         if (beans.size() > 1) {
-            throw new NoUniqueBeanException();
+            throw new NoUniqueBeanException("Bean type: " + beanType.getName());
         }
         return beans.values().stream()
                 .findFirst()
-                .orElseThrow(NoSuchBeanException::new);
+                .orElseThrow(() -> {
+                    throw new NoSuchBeanException("Bean type: " + beanType.getName());
+                });
     }
 
     @Override
@@ -98,7 +100,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .filter(entry -> entry.getKey().equals(name))
                 .map(Map.Entry::getValue)
                 .findAny()
-                .orElseThrow(NoSuchBeanException::new);
+                .orElseThrow(() -> {
+                    throw new NoSuchBeanException("Bean name: " + name + "; Bean type: " + beanType.getName());
+                });
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.breskul.bring.exceptions;
 
 public class BeanInitializingException extends RuntimeException{
-    public BeanInitializingException() {
-        super();
+    public BeanInitializingException(String message) {
+        super(message);
     }
 }
