@@ -11,44 +11,44 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ApplicationContextImplTest {
 
-	private ApplicationContext applicationContextImplUnderTest;
+	private ApplicationContext applicationContext;
 
 	@BeforeEach
 	void setUp() {
-		applicationContextImplUnderTest = new AnnotationConfigApplicationContext("com.breskul.bring.dump");
+		applicationContext = new AnnotationConfigApplicationContext("com.breskul.bring");
 	}
 
 	@Test
 	void testGetBeanShouldReturnBean() {
-		var result = applicationContextImplUnderTest.getBean(PrinterService.class);
+		var result = applicationContext.getBean(PrinterService.class);
 
 		assertNotNull(result);
 	}
 
 	@Test
 	void testGetBeanByNameShouldReturnBean() {
-		var result = applicationContextImplUnderTest.getBean("db", DbService.class);
+		DbService result = applicationContext.getBean("db", DbService.class);
 		assertNotNull(result);
 	}
 
 	@Test
 	void testGetAllBeansShouldReturnBean() {
-		var result = applicationContextImplUnderTest.getAllBeans(DbService.class);
+		var result = applicationContext.getAllBeans(DbService.class);
 		assertEquals(2, result.size());
 	}
 
 	@Test
 	void testGetBeanShouldThrowNoSuchBeanException() {
-		assertThrows(NoSuchBeanException.class, () -> applicationContextImplUnderTest.getBean(String.class));
+		assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean(String.class));
 	}
 
 	@Test
 	void testGetBeanByNameShouldThrowNoSuchBeanException() {
-		assertThrows(NoSuchBeanException.class, () -> applicationContextImplUnderTest.getBean("str", String.class));
+		assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean("str", String.class));
 	}
 
 	@Test
 	void testGetBeanShouldThrowNoUniqueBeanException() {
-		assertThrows(NoUniqueBeanException.class, () -> applicationContextImplUnderTest.getBean(DbService.class));
+		assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(DbService.class));
 	}
 }
