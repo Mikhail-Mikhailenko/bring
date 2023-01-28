@@ -48,9 +48,16 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         try {
             registerBeansInContext(futureComponents);
             autoWireBeans();
-        } catch (Exception e) {
+        } catch (NoSuchFieldException  | NoSuchMethodException | InstantiationException |
+                 IllegalAccessException | InvocationTargetException e  ) {
             LOGGER.error("Can't register beans in appliation context");
             throw new RuntimeException(e);
+        } catch (NoUniqueBeanException e){
+            LOGGER.error("Can't register beans in appliation context");
+            throw new NoUniqueBeanException("MULTIPLE_BEANS_PRESENT");
+        } catch (NoSuchBeanException e){
+            LOGGER.error("Can't register beans in appliation context");
+            throw new NoSuchBeanException("BEAN_IS_NOT_PRESENT");
         }
 
     }
@@ -101,7 +108,12 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         }
     }
-
+    /**
+     * <h3>Injects Bean via {@link Constructor}</h3>
+     *
+     * @param beanClass    {@link Class}
+     * @param beanInstance {@link Object}
+     */
     private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance) throws NoSuchFieldException, IllegalAccessException {
         Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
         for (Field field : PrinterServiceDemo.class.getDeclaredFields()){
