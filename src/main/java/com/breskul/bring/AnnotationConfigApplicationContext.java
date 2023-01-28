@@ -1,12 +1,18 @@
 package com.breskul.bring;
 
+import com.breskul.bring.annotations.Component;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.exceptions.NuSuchBeanConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -26,13 +32,27 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     public AnnotationConfigApplicationContext(String packageName) {
         Objects.requireNonNull(packageName);
         this.packagePath = packageName;
-        scan();
+        initiateContext();
     }
 
     /**
-     * Scanning a package for classes or methods annotated by @Component and @Bean
+     * Scanning a package for classes annotated by {@link Component}.
+     * It creates an instances of such classes and put them into context.
      */
-    private void scan() {
+    private void initiateContext() {
+        Reflections reflections = new Reflections(packagePath, Scanners.TypesAnnotated);
+
+        for (Class<?> bean : reflections.getTypesAnnotatedWith(Component.class)) {
+            String beanCustomName = bean.getAnnotation(Component.class).value();
+            String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
+            try {
+                context.put(beanName, bean.getDeclaredConstructor().newInstance());
+            } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
+                     NoSuchMethodException e) {
+                LOGGER.error("Can't create an instance of {} class", beanName);
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
@@ -57,7 +77,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @return Predicate - filter isAssignableFrom for values types
      */
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {
-        return (entry) -> entry.getValue().getClass().isAssignableFrom(beanType);
+        return entry -> beanType.isAssignableFrom(entry.getValue().getClass());
     }
 
     /**
