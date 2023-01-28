@@ -1,6 +1,8 @@
 package com.breskul.bring;
 
+import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
+import com.breskul.bring.annotations.Configuration;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
@@ -12,17 +14,19 @@ import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Standalone application context, accepting component classes as input — in particular @Configuration-annotated classes,
- * but also plain @Component types
+ * <h3>Standalone application context, accepting component classes as input</h3>
+ * <p>Classes should be annotated with  {@link Configuration} and {@link Component}</p>
  */
 public class AnnotationConfigApplicationContext implements ApplicationContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(BringApplication.class);
@@ -36,31 +40,73 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     /**
-     * Scanning a package for classes annotated by {@link Component}.
-     * It creates an instances of such classes and put them into context.
+     * <h3>Scanning a package for classes annotated by {@link Component}.</h3>
+     * <p>It creates an instances of such classes and put them into context.</p>
      */
     private void initiateContext() {
         Reflections reflections = new Reflections(packagePath, Scanners.TypesAnnotated);
+        Set<Class<?>> futureComponents = reflections.getTypesAnnotatedWith(Component.class);
+        try {
+            registerBeansInContext(futureComponents);
+            autoWireBeans();
+        } catch (Exception e){
+            LOGGER.error("Can't register beans in appliation context");
+            throw new RuntimeException(e);
+        }
 
-        for (Class<?> bean : reflections.getTypesAnnotatedWith(Component.class)) {
-            String beanCustomName = bean.getAnnotation(Component.class).value();
-            String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
+    }
+    /**
+     * <h3>Registers components in application context</h3>
+     *
+     * @param classSet  {@link Set<Class>}
+     */
+    private void registerBeansInContext(Set<Class<?>> classSet) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        for (Class<?> beanClass : classSet) {
+            var constructor = beanClass.getConstructor();
+            var beanInstance = constructor.newInstance();
+            String beanName = resolveBeanName(beanClass);
             try {
-                context.put(beanName, bean.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
-                     NoSuchMethodException e) {
+                context.put(beanName, beanInstance);
+            } catch (Exception e) {
                 LOGGER.error("Can't create an instance of {} class", beanName);
                 throw new RuntimeException(e);
             }
+
         }
+    }
+    /**
+     * <h3>Injects Beans in Autowired field</h3>
+     */
+    private void autoWireBeans() throws IllegalAccessException {
+        for (Map.Entry<String, Object> entry : context.entrySet()) {
+            var beanInstance = entry.getValue();
+
+            for (Field field : beanInstance.getClass().getDeclaredFields()) {
+                field.setAccessible(true);
+                if (field.isAnnotationPresent(Autowired.class)) {
+                    var autowiredBeansInstance = getBean(field.getType());
+                    field.set(beanInstance, autowiredBeansInstance);
+                }
+            }
+        }
+    }
+    /**
+     * <h3>Resolves bean name</h3>
+     *
+     * @param beanClass  {@link Class}
+     * @return {@link String}
+     */
+    private String resolveBeanName(Class<?> beanClass) {
+        String beanCustomNae = beanClass.getAnnotation(Component.class).value();
+        if (!beanCustomNae.isEmpty()) return beanCustomNae;
+        return WordUtils.uncapitalize(beanClass.getSimpleName());
     }
 
     /**
-     * Store bean in the context
+     * <h3>Store bean in the context</h3>
      *
      * @param beanName The name of bean
      * @param bean     The instance of bean
-     * @param <T>      The generic type of instance
      */
     private <T> void storeBean(String beanName, T bean) {
         Objects.requireNonNull(beanName);
@@ -70,7 +116,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     /**
-     * Maps filter by bean type
+     * <h3>Maps filter by bean type</h3>
      *
      * @param beanType The Class of type
      * @param <T>      type of the bean
@@ -81,10 +127,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     /**
-     * Creating an instance of bean by beanType
+     * <h3>Creates an instance of bean by beanType</h3>
      *
      * @param beanType - The type of bean instance
-     * @param <T>
      * @return instance of the created bean
      */
     private <T> T createInstance(Class<T> beanType) {

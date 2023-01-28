@@ -7,8 +7,9 @@ import org.junit.jupiter.api.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AnnotationConfigApplicationContextTest {
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+@DisplayName("ApplicationContext tests")
+public class ApplicationContextTest {
 
     private static ApplicationContext context;
 
