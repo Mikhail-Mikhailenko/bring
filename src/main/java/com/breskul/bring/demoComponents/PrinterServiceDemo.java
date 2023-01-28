@@ -1,7 +1,6 @@
 package com.breskul.bring.demoComponents;
 
 
-import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
 
 @Component
@@ -9,7 +8,9 @@ public class PrinterServiceDemo {
 
     public PrinterServiceDemo() {
     }
-
+    /**
+     * <p>Injection via Constructor</p>
+     */
     public PrinterServiceDemo(MessageServiceDemo messageServiceDemo){
         this.cool = messageServiceDemo;
     }
