@@ -27,11 +27,11 @@ import java.util.stream.Collectors;
 public class AnnotationConfigApplicationContext implements ApplicationContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(BringApplication.class);
     private final Map<String, Object> context = new ConcurrentHashMap<>();
-    private final String packagePath;
+    private final String[] packagePaths;
 
-    public AnnotationConfigApplicationContext(String packageName) {
-        Objects.requireNonNull(packageName);
-        this.packagePath = packageName;
+    public AnnotationConfigApplicationContext(String... packageNames) {
+        Objects.requireNonNull(packageNames);
+        this.packagePaths = packageNames;
         initiateContext();
     }
 
@@ -40,19 +40,20 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * It creates an instances of such classes and put them into context.
      */
     private void initiateContext() {
-        Reflections reflections = new Reflections(packagePath, Scanners.TypesAnnotated);
-
-        for (Class<?> bean : reflections.getTypesAnnotatedWith(Component.class)) {
-            String beanCustomName = bean.getAnnotation(Component.class).value();
-            String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
-            try {
-                context.put(beanName, bean.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
-                     NoSuchMethodException e) {
-                LOGGER.error("Can't create an instance of {} class", beanName);
-                throw new RuntimeException(e);
-            }
-        }
+        Arrays.stream(packagePaths)
+                .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
+                .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
+                .forEach(bean -> {
+                    String beanCustomName = bean.getAnnotation(Component.class).value();
+                    String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
+                    try {
+                        context.put(beanName, bean.getDeclaredConstructor().newInstance());
+                    } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
+                             NoSuchMethodException e) {
+                        LOGGER.error("Can't create an instance of {} class", beanName);
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     /**

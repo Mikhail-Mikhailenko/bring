@@ -1,5 +1,7 @@
 package com.breskul.bring;
 
+import com.breskul.bring.dump.repository.UserRepository;
+import com.breskul.bring.dump.repository.impl.UserRepositoryImpl;
 import com.breskul.bring.dump.service.DbService;
 import com.breskul.bring.dump.service.PrinterService;
 import com.breskul.bring.dump.service.impl.MySqlDbServiceImpl;
@@ -16,7 +18,7 @@ class ApplicationContextImplTest {
 
 	@BeforeEach
 	void setUp() {
-		applicationContext = new AnnotationConfigApplicationContext("com.breskul.bring");
+		applicationContext = new AnnotationConfigApplicationContext("com.breskul.bring.dump.service", "com.breskul.bring.dump.repository");
 	}
 
 	@Test
@@ -52,5 +54,17 @@ class ApplicationContextImplTest {
 	@Test
 	void testGetBeanShouldThrowNoUniqueBeanException() {
 		assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(DbService.class));
+	}
+
+	@Test
+	void testGetBeanFromDifferentPackagesShouldReturnNotNullResult() {
+		DbService dbService = applicationContext.getBean("db", DbService.class);
+		UserRepository userRepository = applicationContext.getBean(UserRepository.class);
+
+		assertNotNull(dbService);
+		assertNotNull(userRepository);
+		assertEquals(dbService.getClass(), MySqlDbServiceImpl.class);
+		assertEquals(userRepository.getClass(), UserRepositoryImpl.class);
+
 	}
 }
