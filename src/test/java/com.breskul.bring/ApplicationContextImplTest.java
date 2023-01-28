@@ -2,6 +2,7 @@ package com.breskul.bring;
 
 import com.breskul.bring.dump.service.DbService;
 import com.breskul.bring.dump.service.PrinterService;
+import com.breskul.bring.dump.service.impl.MySqlDbServiceImpl;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ class ApplicationContextImplTest {
 	void testGetBeanByNameShouldReturnBean() {
 		DbService result = applicationContext.getBean("db", DbService.class);
 		assertNotNull(result);
+		assertEquals(result.getClass(), MySqlDbServiceImpl.class);
 	}
 
 	@Test
