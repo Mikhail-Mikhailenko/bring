@@ -3,23 +3,22 @@ package com.breskul.bring;
 import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
+import com.breskul.bring.demoComponents.PrinterServiceDemo;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.exceptions.NuSuchBeanConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.lang.reflect.Parameter;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -49,16 +48,17 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         try {
             registerBeansInContext(futureComponents);
             autoWireBeans();
-        } catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error("Can't register beans in appliation context");
             throw new RuntimeException(e);
         }
 
     }
+
     /**
      * <h3>Registers components in application context</h3>
      *
-     * @param classSet  {@link Set<Class>}
+     * @param classSet {@link Set<Class>}
      */
     private void registerBeansInContext(Set<Class<?>> classSet) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         for (Class<?> beanClass : classSet) {
@@ -74,26 +74,57 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
         }
     }
+
     /**
      * <h3>Injects Beans in Autowired field</h3>
      */
-    private void autoWireBeans() throws IllegalAccessException {
+    private void autoWireBeans() throws IllegalAccessException, NoSuchFieldException {
         for (Map.Entry<String, Object> entry : context.entrySet()) {
             var beanInstance = entry.getValue();
+            injectBeanViaAutowiredAnnotation(beanInstance.getClass(), beanInstance);
+            injectBeanViaConstructor(beanInstance.getClass(), beanInstance);
+        }
+    }
 
-            for (Field field : beanInstance.getClass().getDeclaredFields()) {
-                field.setAccessible(true);
-                if (field.isAnnotationPresent(Autowired.class)) {
-                    var autowiredBeansInstance = getBean(field.getType());
-                    field.set(beanInstance, autowiredBeansInstance);
-                }
+    /**
+     * <h3>Injects Beans via {@link Autowired} annotation</h3>
+     *
+     * @param beanClass    {@link Class}
+     * @param beanInstance {@link Object}
+     */
+    private <T> void injectBeanViaAutowiredAnnotation(Class<?> beanClass, T beanInstance) throws IllegalAccessException {
+        for (Field field : beanClass.getDeclaredFields()) {
+            field.setAccessible(true);
+            if (field.isAnnotationPresent(Autowired.class)) {
+                var autowiredBeansInstance = getBean(field.getType());
+                field.set(beanInstance, autowiredBeansInstance);
             }
         }
     }
+
+    private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance) throws NoSuchFieldException, IllegalAccessException {
+        Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
+        for (Field field : PrinterServiceDemo.class.getDeclaredFields()){
+            fieldTypeStringNameMap.put(field.getType(), field.getName());
+        }
+        Constructor<?>[] constructors = beanClass.getConstructors();
+        for (Constructor<?> constructor : constructors){
+            for (Parameter parameter: constructor.getParameters()){
+                Class<?> parameterType  = parameter.getType();
+                var autowiredBeansInstance = getBean(parameterType);
+                String parameterName = fieldTypeStringNameMap.get(parameterType);
+                Field field = PrinterServiceDemo.class.getDeclaredField(parameterName);
+                field.setAccessible(true);
+                field.set(beanInstance, autowiredBeansInstance);
+            }
+        }
+
+    }
+
     /**
      * <h3>Resolves bean name</h3>
      *
-     * @param beanClass  {@link Class}
+     * @param beanClass {@link Class}
      * @return {@link String}
      */
     private String resolveBeanName(Class<?> beanClass) {

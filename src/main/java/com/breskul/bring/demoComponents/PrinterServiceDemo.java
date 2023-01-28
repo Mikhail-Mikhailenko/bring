@@ -10,11 +10,14 @@ public class PrinterServiceDemo {
     public PrinterServiceDemo() {
     }
 
-    @Autowired
-    private MessageServiceDemo messageServiceDemo;
+    public PrinterServiceDemo(MessageServiceDemo messageServiceDemo){
+        this.cool = messageServiceDemo;
+    }
+
+    private MessageServiceDemo cool;
 
     public String getMessage(){
-        return messageServiceDemo.getMessage();
+        return cool.getMessage();
     }
     public void printMessage() {
         System.out.println(getMessage());
