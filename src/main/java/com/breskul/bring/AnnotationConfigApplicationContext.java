@@ -48,22 +48,28 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * <p>It creates an instances of such classes and put them into context.</p>
      */
     private void initiateContext() {
+        loadComponents();
+        autoWireBeans();
+
+    }
+
+    private void loadComponents() {
         Arrays.stream(packagePaths)
                 .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
                 .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
-                .forEach(bean -> {
-                    String beanCustomName = bean.getAnnotation(Component.class).value();
-                    String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
-                    try {
-                        context.put(beanName, bean.getDeclaredConstructor().newInstance());
+                .forEach(this::registerBeansInContext);
+    }
 
-                    } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
-                             NoSuchMethodException e) {
-                        LOGGER.error("Can't create an instance of {} class", beanName);
-                        throw new RuntimeException(e);
-                    }
-                });
-        autoWireBeans();
+    private void registerBeansInContext(Class<?> beanClass) {
+        try {
+            var constructor = beanClass.getConstructor();
+            var beanInstance = constructor.newInstance();
+            String beanName = resolveBeanName(beanClass);
+            context.put(beanName, beanInstance);
+        } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
 
     }
 
@@ -75,7 +81,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 injectBeanViaConstructor(beanInstance.getClass(), beanInstance);
             }
         } catch (IllegalAccessException | NoSuchFieldException e) {
-
             throw new RuntimeException(e);
         } catch (NoSuchBeanException e) {
             throw new NoSuchBeanException("NO_SUCH_BEAN_EXCEPTION");
