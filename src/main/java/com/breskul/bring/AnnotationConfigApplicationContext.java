@@ -157,8 +157,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     /**
      * <h3>Maps filter by bean type</h3>
      *
-     * @param beanType The Class of type
-     * @param <T>      type of the bean
+     * @param beanType  {@link Class} of bean
      * @return Predicate - filter isAssignableFrom for values types
      */
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {
@@ -168,7 +167,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     /**
      * <h3>Creates an instance of bean by beanType</h3>
      *
-     * @param beanType - The type of bean instance
+     * @param beanType - {@link Class} of bean
      * @return instance of the created bean
      */
     private <T> T createInstance(Class<T> beanType) {
