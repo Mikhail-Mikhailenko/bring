@@ -8,6 +8,8 @@ import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.exceptions.NuSuchBeanConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -32,10 +34,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final String[] packagePaths;
 
+
     public AnnotationConfigApplicationContext(String... packageNames) {
         Objects.requireNonNull(packageNames);
         this.packagePaths = packageNames;
         initiateContext();
+
+
     }
 
     /**
@@ -51,12 +56,31 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                     String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
                     try {
                         context.put(beanName, bean.getDeclaredConstructor().newInstance());
+
                     } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
                              NoSuchMethodException e) {
                         LOGGER.error("Can't create an instance of {} class", beanName);
                         throw new RuntimeException(e);
                     }
                 });
+        autoWireBeans();
+
+    }
+
+    private void autoWireBeans() {
+        try {
+            for (Map.Entry<String, Object> entry : context.entrySet()) {
+                var beanInstance = entry.getValue();
+                injectBeanViaAutowiredAnnotation(beanInstance.getClass(), beanInstance);
+                injectBeanViaConstructor(beanInstance.getClass(), beanInstance);
+            }
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+
+            throw new RuntimeException(e);
+        } catch (NoSuchBeanException e) {
+            throw new NoSuchBeanException("NO_SUCH_BEAN_EXCEPTION");
+        }
+
     }
 
     /**
@@ -74,6 +98,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         }
     }
+
     /**
      * <h3>Injects Bean via {@link Constructor}</h3>
      *
@@ -82,13 +107,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      */
     private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance) throws NoSuchFieldException, IllegalAccessException {
         Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
-        for (Field field : PrinterServiceDemo.class.getDeclaredFields()){
+        for (Field field : PrinterServiceDemo.class.getDeclaredFields()) {
             fieldTypeStringNameMap.put(field.getType(), field.getName());
         }
         Constructor<?>[] constructors = beanClass.getConstructors();
-        for (Constructor<?> constructor : constructors){
-            for (Parameter parameter: constructor.getParameters()){
-                Class<?> parameterType  = parameter.getType();
+        for (Constructor<?> constructor : constructors) {
+            for (Parameter parameter : constructor.getParameters()) {
+                Class<?> parameterType = parameter.getType();
                 var autowiredBeansInstance = getBean(parameterType);
                 String parameterName = fieldTypeStringNameMap.get(parameterType);
                 Field field = PrinterServiceDemo.class.getDeclaredField(parameterName);
