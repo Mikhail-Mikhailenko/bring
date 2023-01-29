@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a class declares one or more {@link Bean @Bean} methods and
+ * Indicates that a class declares one or more {@link Bean} methods and
  * using by Bring for generating and getting bean instances.
  *
  */
