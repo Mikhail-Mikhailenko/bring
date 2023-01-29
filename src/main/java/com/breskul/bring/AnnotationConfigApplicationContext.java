@@ -30,11 +30,11 @@ import java.util.stream.Collectors;
 public class AnnotationConfigApplicationContext implements ApplicationContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(BringApplication.class);
     private final Map<String, Object> context = new ConcurrentHashMap<>();
-    private final String packagePath;
+    private final String[] packagePaths;
 
-    public AnnotationConfigApplicationContext(String packageName) {
-        Objects.requireNonNull(packageName);
-        this.packagePath = packageName;
+    public AnnotationConfigApplicationContext(String... packageNames) {
+        Objects.requireNonNull(packageNames);
+        this.packagePaths = packageNames;
         initiateContext();
     }
 
@@ -43,54 +43,20 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * <p>It creates an instances of such classes and put them into context.</p>
      */
     private void initiateContext() {
-        Reflections reflections = new Reflections(packagePath, Scanners.TypesAnnotated);
-        Set<Class<?>> futureComponents = reflections.getTypesAnnotatedWith(Component.class);
-        try {
-            registerBeansInContext(futureComponents);
-            autoWireBeans();
-        } catch (NoSuchFieldException  | NoSuchMethodException | InstantiationException |
-                 IllegalAccessException | InvocationTargetException e  ) {
-            LOGGER.error("Can't register beans in appliation context");
-            throw new RuntimeException(e);
-        } catch (NoUniqueBeanException e){
-            LOGGER.error("Can't register beans in appliation context");
-            throw new NoUniqueBeanException("MULTIPLE_BEANS_PRESENT");
-        } catch (NoSuchBeanException e){
-            LOGGER.error("Can't register beans in appliation context");
-            throw new NoSuchBeanException("BEAN_IS_NOT_PRESENT");
-        }
-
-    }
-
-    /**
-     * <h3>Registers components in application context</h3>
-     *
-     * @param classSet {@link Set<Class>}
-     */
-    private void registerBeansInContext(Set<Class<?>> classSet) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        for (Class<?> beanClass : classSet) {
-            var constructor = beanClass.getConstructor();
-            var beanInstance = constructor.newInstance();
-            String beanName = resolveBeanName(beanClass);
-            try {
-                context.put(beanName, beanInstance);
-            } catch (Exception e) {
-                LOGGER.error("Can't create an instance of {} class", beanName);
-                throw new RuntimeException(e);
-            }
-
-        }
-    }
-
-    /**
-     * <h3>Injects Beans in Autowired field</h3>
-     */
-    private void autoWireBeans() throws IllegalAccessException, NoSuchFieldException {
-        for (Map.Entry<String, Object> entry : context.entrySet()) {
-            var beanInstance = entry.getValue();
-            injectBeanViaAutowiredAnnotation(beanInstance.getClass(), beanInstance);
-            injectBeanViaConstructor(beanInstance.getClass(), beanInstance);
-        }
+        Arrays.stream(packagePaths)
+                .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
+                .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
+                .forEach(bean -> {
+                    String beanCustomName = bean.getAnnotation(Component.class).value();
+                    String beanName = StringUtils.defaultIfEmpty(beanCustomName, WordUtils.uncapitalize(bean.getSimpleName()));
+                    try {
+                        context.put(beanName, bean.getDeclaredConstructor().newInstance());
+                    } catch (InstantiationException | InvocationTargetException | IllegalAccessException |
+                             NoSuchMethodException e) {
+                        LOGGER.error("Can't create an instance of {} class", beanName);
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     /**
