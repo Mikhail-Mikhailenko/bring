@@ -1,6 +1,7 @@
 package com.breskul.bring;
 
 import com.breskul.bring.annotations.Autowired;
+import com.breskul.bring.annotations.Bean;
 import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
 import com.breskul.bring.exceptions.BeanInitializingException;
@@ -13,10 +14,7 @@ import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -46,28 +44,52 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      */
     private void initiateContext() {
         loadComponents();
+        loadConfigurations();
         autoWireBeans();
-
     }
 
     private void loadComponents() {
         Arrays.stream(packagePaths)
                 .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
                 .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
-                .forEach(this::registerBeansInContext);
+                .forEach(this::registerComponentsBeansInContext);
     }
 
-    private void registerBeansInContext(Class<?> beanClass) {
+    private void registerComponentsBeansInContext(Class<?> beanClass) {
         try {
             var constructor = beanClass.getConstructor();
             var beanInstance = constructor.newInstance();
-            String beanName = resolveBeanName(beanClass);
+            String beanName = resolveBeanName(beanClass.getAnnotation(Component.class).value(), beanClass);
             context.put(beanName, beanInstance);
-        } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+        } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
+                 IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    private void loadConfigurations() throws RuntimeException {
+        Arrays.stream(packagePaths)
+                .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
+                .flatMap(reflections -> reflections.getTypesAnnotatedWith(Configuration.class).stream())
+                .forEach(this::registerConfigurationsBeansInContext);
+    }
 
+    private void registerConfigurationsBeansInContext(Class<?> configClass) {
+        try {
+            var config = configClass.getDeclaredConstructor().newInstance();
+            Method[] methods = configClass.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(Bean.class)) {
+                    String beanName = resolveBeanName(method.getAnnotation(Bean.class).value(), method.getReturnType());
+                    method.setAccessible(true);
+                    var bean = method.invoke(config);
+                    context.put(beanName, bean);
+                }
+            }
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                 | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void autoWireBeans() {
@@ -132,9 +154,10 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @param beanClass {@link Class}
      * @return {@link String}
      */
-    private String resolveBeanName(Class<?> beanClass) {
-        String beanCustomNae = beanClass.getAnnotation(Component.class).value();
-        if (!beanCustomNae.isEmpty()) return beanCustomNae;
+    private String resolveBeanName(String beanCustomName, Class<?> beanClass) {
+        if (beanCustomName != null && !beanCustomName.isEmpty()) {
+            return beanCustomName;
+        }
         return WordUtils.uncapitalize(beanClass.getSimpleName());
     }
 
@@ -154,7 +177,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     /**
      * <h3>Maps filter by bean type</h3>
      *
-     * @param beanType  {@link Class} of bean
+     * @param beanType {@link Class} of bean
      * @return Predicate - filter isAssignableFrom for values types
      */
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {

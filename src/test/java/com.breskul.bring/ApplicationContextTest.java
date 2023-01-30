@@ -7,6 +7,9 @@ import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.packages.components.Component1;
 import com.breskul.bring.packages.components.Component2;
 import com.breskul.bring.packages.components.SameBeanInterface;
+import com.breskul.bring.packages.configurations.ConfiguredBeanInterface;
+import com.breskul.bring.packages.configurations.ConfiguredComponent1;
+import com.breskul.bring.packages.configurations.ConfiguredComponent2;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
@@ -26,6 +29,7 @@ public class ApplicationContextTest {
     private static final String AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nouniquebean";
     private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
 
+    private static final String CONFIGURATION_PACKAGE_NAME = "com.breskul.bring.packages.configurations";
 
 
     @Nested
@@ -113,6 +117,62 @@ public class ApplicationContextTest {
         @DisplayName("Autowiring throws NoSuchBeanException")
         void autowiringGetNoSuchBeanException(){
             assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME));
+        }
+
+    }
+
+    @Nested
+    @Order(3)
+    @DisplayName("2. ApplicationContext Configuration Test")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class ApplicationContextConfigurationTest {
+        @Test
+        @Order(1)
+        @DisplayName("Beans are loaded from the MyConfiguration")
+        void loadConfiguration()  {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+            ConfiguredBeanInterface component1ByType = applicationContext.getBean(ConfiguredComponent1.class);
+            assertEquals(component1ByType.getClass(), ConfiguredComponent1.class);
+
+            ConfiguredBeanInterface component1ByName = applicationContext.getBean("configuredComponent1", ConfiguredComponent1.class);
+            assertEquals(component1ByName.getClass(), ConfiguredComponent1.class);
+
+            ConfiguredBeanInterface printerServiceDemo = applicationContext.getBean("customBeanName", ConfiguredComponent2.class);
+            assertEquals(printerServiceDemo.getClass(), ConfiguredComponent2.class);
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("NoSuchBeanException is thrown when there is no bean")
+        void getNoSuchBeanException()  {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+            assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean(Field.class));
+            assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean("component2", ConfiguredComponent2.class));
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
+        void getNoUniqueBeanException()  {
+            var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+            assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(ConfiguredBeanInterface.class));
+        }
+
+        @Test
+        @Order(4)
+        @DisplayName("Correct Beans map is returned")
+        void getCorrectBeansMap() throws Exception {
+            Map<String, Object> testBeansMap = new HashMap<>();
+            testBeansMap.put("configuredComponent1", ConfiguredComponent1.class.getConstructor().newInstance());
+            testBeansMap.put("customBeanName", ConfiguredComponent2.class.getConstructor().newInstance());
+            var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+            Map<String, ConfiguredBeanInterface> applicationContextMap = applicationContext.getAllBeans(ConfiguredBeanInterface.class);
+            for (Map.Entry<String, Object> entryTest : testBeansMap.entrySet()) {
+                var beanName = entryTest.getKey();
+                var beanValue = entryTest.getValue();
+                assertTrue(applicationContextMap.containsKey(beanName));
+                assertEquals(beanValue.getClass(), beanValue.getClass());
+            }
         }
 
     }
