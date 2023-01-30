@@ -1,4 +1,4 @@
-package com.breskul.bring.testComponentsEdgeCases.testComponentNoSuchBeanException;
+package com.breskul.bring.packages.autowired.nosuchbean;
 
 
 import com.breskul.bring.annotations.Autowired;

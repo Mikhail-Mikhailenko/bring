@@ -1,4 +1,4 @@
-package com.breskul.bring.demoComponents;
+package com.breskul.bring.packages.autowired.correct;
 
 
 import com.breskul.bring.annotations.Component;
