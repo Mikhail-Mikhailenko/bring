@@ -3,13 +3,10 @@ package com.breskul.bring;
 import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
-import com.breskul.bring.demoComponents.PrinterServiceDemo;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import com.breskul.bring.exceptions.NuSuchBeanConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -112,7 +109,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      */
     private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance) throws NoSuchFieldException, IllegalAccessException {
         Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
-        for (Field field : PrinterServiceDemo.class.getDeclaredFields()) {
+        for (Field field : beanClass.getDeclaredFields()) {
             fieldTypeStringNameMap.put(field.getType(), field.getName());
         }
         Constructor<?>[] constructors = beanClass.getConstructors();
@@ -121,7 +118,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 Class<?> parameterType = parameter.getType();
                 var autowiredBeansInstance = getBean(parameterType);
                 String parameterName = fieldTypeStringNameMap.get(parameterType);
-                Field field = PrinterServiceDemo.class.getDeclaredField(parameterName);
+                Field field = beanClass.getDeclaredField(parameterName);
                 field.setAccessible(true);
                 field.set(beanInstance, autowiredBeansInstance);
             }
