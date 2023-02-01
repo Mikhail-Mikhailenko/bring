@@ -1,4 +1,4 @@
-package com.breskul.bring.testComponentsEdgeCases.testBeansCorrectMap;
+package com.breskul.bring.packages.autowired.nouniquebean;
 
 
 import com.breskul.bring.annotations.Component;

@@ -1,4 +1,4 @@
-package com.breskul.bring.testComponentsEdgeCases.testBeanAutowireNoUniqueBeanException;
+package com.breskul.bring.packages.autowired.nouniquebean;
 
 import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
