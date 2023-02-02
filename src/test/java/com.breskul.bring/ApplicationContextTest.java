@@ -10,6 +10,8 @@ import com.breskul.bring.packages.components.SameBeanInterface;
 import com.breskul.bring.packages.configurations.ConfiguredBeanInterface;
 import com.breskul.bring.packages.configurations.ConfiguredComponent1;
 import com.breskul.bring.packages.configurations.ConfiguredComponent2;
+import com.breskul.bring.packages.configurations.TestConfiguration;
+import com.breskul.bring.packages.configurations.TestCustomNameConfiguration;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
@@ -129,7 +131,7 @@ public class ApplicationContextTest {
         @Test
         @Order(1)
         @DisplayName("Beans are loaded from the MyConfiguration")
-        void loadConfiguration()  {
+        void loadConfiguration() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             ConfiguredBeanInterface component1ByType = applicationContext.getBean(ConfiguredComponent1.class);
             assertEquals(component1ByType.getClass(), ConfiguredComponent1.class);
@@ -144,7 +146,7 @@ public class ApplicationContextTest {
         @Test
         @Order(2)
         @DisplayName("NoSuchBeanException is thrown when there is no bean")
-        void getNoSuchBeanException()  {
+        void getNoSuchBeanException() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean(Field.class));
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean("component2", ConfiguredComponent2.class));
@@ -153,7 +155,7 @@ public class ApplicationContextTest {
         @Test
         @Order(3)
         @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
-        void getNoUniqueBeanException()  {
+        void getNoUniqueBeanException() {
             var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(ConfiguredBeanInterface.class));
         }
@@ -175,6 +177,32 @@ public class ApplicationContextTest {
             }
         }
 
+        @Test
+        @Order(5)
+        @DisplayName("Configuration bean exists")
+        void getConfigurationBean() {
+            var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+
+            TestConfiguration testConfiguration = applicationContext.getBean(TestConfiguration.class);
+            assertNotNull(testConfiguration);
+
+            TestCustomNameConfiguration customNameConfiguration = applicationContext
+                    .getBean("customNameConfiguration", TestCustomNameConfiguration.class);
+            assertNotNull(customNameConfiguration);
+        }
+
+        @Test
+        @Order(6)
+        @DisplayName("Configuration beans return the same instance of object")
+        void getProxyConfigurationBean() {
+            var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
+
+            TestConfiguration testConfiguration = applicationContext.getBean(TestConfiguration.class);
+            assertNotNull(testConfiguration);
+
+            assertSame(testConfiguration.getComponent1(), testConfiguration.getComponent1());
+            assertSame(testConfiguration.getComponent2(), testConfiguration.getComponent2());
+        }
     }
 
 }

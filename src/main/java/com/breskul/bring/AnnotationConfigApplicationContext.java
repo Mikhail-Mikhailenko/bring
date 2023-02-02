@@ -4,15 +4,15 @@ import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Bean;
 import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
-import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
-import com.breskul.bring.exceptions.NuSuchBeanConstructor;
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.MethodInterceptor;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -29,13 +29,10 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final String[] packagePaths;
 
-
     public AnnotationConfigApplicationContext(String... packageNames) {
         Objects.requireNonNull(packageNames);
         this.packagePaths = packageNames;
         initiateContext();
-
-
     }
 
     /**
@@ -46,6 +43,34 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         loadComponents();
         loadConfigurations();
         autoWireBeans();
+        proxyConfigurations();
+    }
+
+    private void proxyConfigurations() {
+        Map<String, Object> configurationBeans = context.entrySet().stream()
+                .filter(entry -> entry.getValue().getClass().isAnnotationPresent(Configuration.class))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        configurationBeans.forEach(this::createConfigurationProxy);
+    }
+
+    /**
+     * <h3>Create proxy for {@link Configuration} annotation</h3>
+     *
+     * @param name    {@link String}
+     * @param beanInstance {@link Object}
+     */
+    private void createConfigurationProxy(String name, Object beanInstance) {
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(beanInstance.getClass());
+        enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
+            if (method.isAnnotationPresent(Bean.class)) {
+                var beanName = resolveBeanName(method.getAnnotation(Bean.class).value(), method.getReturnType());
+                return context.get(beanName);
+            }
+            return proxy.invokeSuper(obj, args);
+        });
+        context.put(name, enhancer.create());
     }
 
     private void loadComponents() {
@@ -76,16 +101,18 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
     private void registerConfigurationsBeansInContext(Class<?> configClass) {
         try {
-            var config = configClass.getDeclaredConstructor().newInstance();
+            var beanInstance = configClass.getConstructor().newInstance();
             Method[] methods = configClass.getDeclaredMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(Bean.class)) {
                     String beanName = resolveBeanName(method.getAnnotation(Bean.class).value(), method.getReturnType());
                     method.setAccessible(true);
-                    var bean = method.invoke(config);
+                    var bean = method.invoke(beanInstance);
                     context.put(beanName, bean);
                 }
             }
+            String configBeanName = resolveBeanName(configClass.getAnnotation(Configuration.class).value(), configClass);
+            context.put(configBeanName, beanInstance);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException
                  | NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -115,8 +142,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      */
     private <T> void injectBeanViaAutowiredAnnotation(Class<?> beanClass, T beanInstance) throws IllegalAccessException {
         for (Field field : beanClass.getDeclaredFields()) {
-            field.setAccessible(true);
             if (field.isAnnotationPresent(Autowired.class)) {
+                field.setAccessible(true);
                 var autowiredBeansInstance = getBean(field.getType());
                 field.set(beanInstance, autowiredBeansInstance);
             }
@@ -145,7 +172,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 field.set(beanInstance, autowiredBeansInstance);
             }
         }
-
     }
 
     /**
@@ -162,19 +188,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     /**
-     * <h3>Store bean in the context</h3>
-     *
-     * @param beanName The name of bean
-     * @param bean     The instance of bean
-     */
-    private <T> void storeBean(String beanName, T bean) {
-        Objects.requireNonNull(beanName);
-        Objects.requireNonNull(bean);
-        LOGGER.info("Bring Framework: Creating bean >>> {}: {}", beanName, bean);
-        context.put(beanName, bean);
-    }
-
-    /**
      * <h3>Maps filter by bean type</h3>
      *
      * @param beanType {@link Class} of bean
@@ -182,25 +195,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      */
     private <T> Predicate<Map.Entry<String, Object>> filterByBeanType(Class<T> beanType) {
         return entry -> beanType.isAssignableFrom(entry.getValue().getClass());
-    }
-
-    /**
-     * <h3>Creates an instance of bean by beanType</h3>
-     *
-     * @param beanType - {@link Class} of bean
-     * @return instance of the created bean
-     */
-    private <T> T createInstance(Class<T> beanType) {
-        var constructor = Arrays.stream(beanType.getConstructors())
-                .findFirst()
-                .orElseThrow(() -> {
-                    throw new NuSuchBeanConstructor("Bean type: " + beanType.getName());
-                });
-        try {
-            return beanType.cast(constructor.newInstance());
-        } catch (Exception ex) {
-            throw new BeanInitializingException("Bean type: " + beanType.getName());
-        }
     }
 
     @Override
