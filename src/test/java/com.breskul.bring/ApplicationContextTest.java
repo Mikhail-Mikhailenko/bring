@@ -4,6 +4,9 @@ import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
+import com.breskul.bring.packages.autowired.injectViaSetterCorrect.ListenerServiceSetterInjection;
+import com.breskul.bring.packages.autowired.injectViaSetterCorrect.MessageServiceDemoSetterInjection;
+import com.breskul.bring.packages.autowired.injectViaSetterCorrect.PrinterServiceDemoSetterInjection;
 import com.breskul.bring.packages.components.Component1;
 import com.breskul.bring.packages.components.Component2;
 import com.breskul.bring.packages.components.SameBeanInterface;
@@ -30,7 +33,9 @@ public class ApplicationContextTest {
     private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
 
     private static final String CONFIGURATION_PACKAGE_NAME = "com.breskul.bring.packages.configurations";
-
+    private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.injectViaSetterCorrect";
+    private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean";
+    private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoUniqueBean";
 
     @Nested
     @Order(1)
@@ -123,7 +128,7 @@ public class ApplicationContextTest {
 
     @Nested
     @Order(3)
-    @DisplayName("2. ApplicationContext Configuration Test")
+    @DisplayName("3. ApplicationContext Configuration Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class ApplicationContextConfigurationTest {
         @Test
@@ -173,6 +178,43 @@ public class ApplicationContextTest {
                 assertTrue(applicationContextMap.containsKey(beanName));
                 assertEquals(beanValue.getClass(), beanValue.getClass());
             }
+        }
+
+    }
+
+    @Nested
+    @Order(3)
+    @DisplayName("4. Inject Bean Via Setter Test")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class InjectBeanViaSetterTest{
+        @Test
+        @Order(1)
+        @DisplayName("Beans are correctly injected via setter")
+        void loadConfiguration()  {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_PACKAGE_NAME);
+            ListenerServiceSetterInjection listenerServiceSetterInjection = applicationContext.getBean(ListenerServiceSetterInjection.class);
+            assertEquals(listenerServiceSetterInjection.getClass(), ListenerServiceSetterInjection.class);
+
+            MessageServiceDemoSetterInjection messageServiceDemoSetterInjection = applicationContext.getBean(MessageServiceDemoSetterInjection.class);
+            assertEquals(messageServiceDemoSetterInjection.getClass(), MessageServiceDemoSetterInjection.class);
+            messageServiceDemoSetterInjection.setMessage("MESSAGE_FROM_MESSAGE_SERVICE!");
+            PrinterServiceDemoSetterInjection printerServiceDemoSetterInjection = applicationContext.getBean(PrinterServiceDemoSetterInjection.class);
+            assertEquals(printerServiceDemoSetterInjection.getClass(), PrinterServiceDemoSetterInjection.class);
+
+            printerServiceDemoSetterInjection.printMessage();
+        }
+        @Test
+        @Order(2)
+        @DisplayName("NoSuchBeanException is thrown when there is no bean")
+        void getNoSuchBeanException()  {
+            assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_NO_SUCH_BEAN));
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
+        void getNoUniqueBeanException()  {
+            assertThrows(NoUniqueBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_NO_UNIQUE_BEAN));
         }
 
     }
