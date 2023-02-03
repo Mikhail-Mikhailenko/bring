@@ -97,7 +97,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             for (Map.Entry<String, Object> entry : context.entrySet()) {
                 var beanInstance = entry.getValue();
                 injectBeanViaAutowiredAnnotation(beanInstance.getClass(), beanInstance);
-                injectBeanViaConstructor(beanInstance.getClass(), beanInstance);
+                Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
+                Class<?> beanClass = beanInstance.getClass();
+                for (Field field : beanClass.getDeclaredFields()) {
+                    fieldTypeStringNameMap.put(field.getType(), field.getName());
+                }
+                injectBeanViaConstructor(beanInstance.getClass(), beanInstance, fieldTypeStringNameMap);
+                injectBeanViaSetter(beanInstance.getClass(), beanInstance, fieldTypeStringNameMap);
             }
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
@@ -129,11 +135,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @param beanClass    {@link Class}
      * @param beanInstance {@link Object}
      */
-    private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance) throws NoSuchFieldException, IllegalAccessException {
-        Map<Class<?>, String> fieldTypeStringNameMap = new HashMap<>();
-        for (Field field : beanClass.getDeclaredFields()) {
-            fieldTypeStringNameMap.put(field.getType(), field.getName());
-        }
+    private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap) throws NoSuchFieldException, IllegalAccessException {
+
         Constructor<?>[] constructors = beanClass.getConstructors();
         for (Constructor<?> constructor : constructors) {
             for (Parameter parameter : constructor.getParameters()) {
@@ -146,6 +149,28 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         }
 
+    }
+    /**
+     * <h3>Injects Bean via Setter </h3>
+     *
+     * @param beanClass    {@link Class}
+     * @param beanInstance {@link Object}
+     */
+
+    private <T> void injectBeanViaSetter(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap) throws NoSuchFieldException, IllegalAccessException {
+        Method[] beanMethods = beanClass.getDeclaredMethods();
+        for (Method method: beanMethods){
+            if (method.getName().startsWith("set") && method.isAnnotationPresent(Bean.class)){
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                for (Class<?> parameterType: parameterTypes){
+                    var autowiredBeansInstance = getBean(parameterType);
+                    String parameterName = fieldTypeStringNameMap.get(parameterType);
+                    Field field = beanClass.getDeclaredField(parameterName);
+                    field.setAccessible(true);
+                    field.set(beanInstance, autowiredBeansInstance);
+                }
+            }
+        }
     }
 
     /**
