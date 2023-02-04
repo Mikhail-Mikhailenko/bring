@@ -4,6 +4,9 @@ import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
+import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.ListenerServiceConstructorInjec;
+import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.MessageServiceDemoConstructorInjec;
+import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.PrinterServiceDemoConstructorInjec;
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.ListenerServiceSetterInjection;
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.MessageServiceDemoSetterInjection;
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.PrinterServiceDemoSetterInjection;
@@ -26,26 +29,20 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("ApplicationContext tests")
 public class ApplicationContextTest {
 
-    private static final String COMPONENTS_PACKAGE_NAME = "com.breskul.bring.packages.components";
-
-    private static final String AUTOWIRE_CORRECT_PACAKGE_NAME = "com.breskul.bring.packages.autowired.correct";
-    private static final String AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nouniquebean";
-    private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
-
-    private static final String CONFIGURATION_PACKAGE_NAME = "com.breskul.bring.packages.configurations";
-    private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.injectViaSetterCorrect";
-    private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean";
-    private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoUniqueBean";
 
     @Nested
     @Order(1)
     @DisplayName("1. ApplicationContext Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-    class ApplicationContextInterfaceTest{
+    class ApplicationContextInterfaceTest {
+        private static final String COMPONENTS_PACKAGE_NAME = "com.breskul.bring.packages.components";
+
+
+
         @Test
         @Order(1)
         @DisplayName("Bean retrieved by type and name correctly")
-        void getBeanByType(){
+        void getBeanByType() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(COMPONENTS_PACKAGE_NAME);
             SameBeanInterface messageServiceDemo = applicationContext.getBean(Component1.class);
             assertEquals(messageServiceDemo.getClass(), Component1.class);
@@ -60,7 +57,7 @@ public class ApplicationContextTest {
         @Test
         @Order(2)
         @DisplayName("NoSuchBeanException is thrown when there is no bean")
-        void getNoSuchBeanException()  {
+        void getNoSuchBeanException() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(COMPONENTS_PACKAGE_NAME);
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean(Field.class));
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean("component2", Component2.class));
@@ -69,7 +66,7 @@ public class ApplicationContextTest {
         @Test
         @Order(3)
         @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
-        void getNoUniqueBeanException()  {
+        void getNoUniqueBeanException() {
             var applicationContext = new AnnotationConfigApplicationContext(COMPONENTS_PACKAGE_NAME);
             assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(SameBeanInterface.class));
         }
@@ -97,10 +94,13 @@ public class ApplicationContextTest {
     @DisplayName("2. ApplicationContext Autowiring Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class ApplicationContextAutowiringTest {
+        private static final String AUTOWIRE_CORRECT_PACAKGE_NAME = "com.breskul.bring.packages.autowired.correct";
+        private static final String AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nouniquebean";
+        private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
         @Test
         @Order(1)
         @DisplayName("Bean is autowired correctly")
-        void autowireBeanCorrectly()  {
+        void autowireBeanCorrectly() {
             var applicationContext = new AnnotationConfigApplicationContext(AUTOWIRE_CORRECT_PACAKGE_NAME);
             MessageServiceDemo messageServiceDemo = applicationContext.getBean(MessageServiceDemo.class);
             messageServiceDemo.setMessage("MY_MESSAGE");
@@ -111,7 +111,7 @@ public class ApplicationContextTest {
         @Test
         @Order(2)
         @DisplayName("Autowiring throws NoUniqueBeanException")
-        void autowiringGetNoUniqueBeanException(){
+        void autowiringGetNoUniqueBeanException() {
             assertThrows(NoUniqueBeanException.class,
                     () -> new AnnotationConfigApplicationContext(AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME));
 
@@ -120,7 +120,7 @@ public class ApplicationContextTest {
         @Test
         @Order(3)
         @DisplayName("Autowiring throws NoSuchBeanException")
-        void autowiringGetNoSuchBeanException(){
+        void autowiringGetNoSuchBeanException() {
             assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME));
         }
 
@@ -131,10 +131,11 @@ public class ApplicationContextTest {
     @DisplayName("3. ApplicationContext Configuration Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class ApplicationContextConfigurationTest {
+        private static final String CONFIGURATION_PACKAGE_NAME = "com.breskul.bring.packages.configurations";
         @Test
         @Order(1)
         @DisplayName("Beans are loaded from the MyConfiguration")
-        void loadConfiguration()  {
+        void loadConfiguration() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             ConfiguredBeanInterface component1ByType = applicationContext.getBean(ConfiguredComponent1.class);
             assertEquals(component1ByType.getClass(), ConfiguredComponent1.class);
@@ -149,7 +150,7 @@ public class ApplicationContextTest {
         @Test
         @Order(2)
         @DisplayName("NoSuchBeanException is thrown when there is no bean")
-        void getNoSuchBeanException()  {
+        void getNoSuchBeanException() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean(Field.class));
             assertThrows(NoSuchBeanException.class, () -> applicationContext.getBean("component2", ConfiguredComponent2.class));
@@ -158,7 +159,7 @@ public class ApplicationContextTest {
         @Test
         @Order(3)
         @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
-        void getNoUniqueBeanException()  {
+        void getNoUniqueBeanException() {
             var applicationContext = new AnnotationConfigApplicationContext(CONFIGURATION_PACKAGE_NAME);
             assertThrows(NoUniqueBeanException.class, () -> applicationContext.getBean(ConfiguredBeanInterface.class));
         }
@@ -183,14 +184,17 @@ public class ApplicationContextTest {
     }
 
     @Nested
-    @Order(3)
+    @Order(4)
     @DisplayName("4. Inject Bean Via Setter Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-    class InjectBeanViaSetterTest{
+    class InjectBeanViaSetterTest {
+        private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.injectViaSetterCorrect";
+        private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean";
+        private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoUniqueBean";
         @Test
         @Order(1)
         @DisplayName("Beans are correctly injected via setter")
-        void loadConfiguration()  {
+        void loadConfiguration() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_PACKAGE_NAME);
             ListenerServiceSetterInjection listenerServiceSetterInjection = applicationContext.getBean(ListenerServiceSetterInjection.class);
             assertEquals(listenerServiceSetterInjection.getClass(), ListenerServiceSetterInjection.class);
@@ -203,18 +207,62 @@ public class ApplicationContextTest {
 
             printerServiceDemoSetterInjection.printMessage();
         }
+
         @Test
         @Order(2)
         @DisplayName("NoSuchBeanException is thrown when there is no bean")
-        void getNoSuchBeanException()  {
+        void getNoSuchBeanException() {
             assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_NO_SUCH_BEAN));
         }
 
         @Test
         @Order(3)
         @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
-        void getNoUniqueBeanException()  {
+        void getNoUniqueBeanException() {
             assertThrows(NoUniqueBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_SETTER_NO_UNIQUE_BEAN));
+        }
+
+    }
+
+
+    @Nested
+    @Order(5)
+    @DisplayName("5. Inject Beans via Constructor")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class InjectBeansViaConstrucor {
+        private static final String INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT = "com.breskul.bring.packages.autowired.injectViaConstructorCorrect";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoSuchBean";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoUniqueBean";
+        @Test
+        @Order(1)
+        @DisplayName("Beans are correctly injected via constructor")
+        void loadConfiguration() {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT);
+            ListenerServiceConstructorInjec listenerServiceConstructorInjec = applicationContext.getBean(ListenerServiceConstructorInjec.class);
+            assertEquals(listenerServiceConstructorInjec.getClass(), ListenerServiceConstructorInjec.class);
+
+            MessageServiceDemoConstructorInjec messageServiceDemoConstructorInjec = applicationContext.getBean(MessageServiceDemoConstructorInjec.class);
+            assertEquals(messageServiceDemoConstructorInjec.getClass(), MessageServiceDemoConstructorInjec.class);
+            messageServiceDemoConstructorInjec.setMessage("MESSAGE_FROM_MESSAGE_SERVICE!");
+
+            PrinterServiceDemoConstructorInjec printerServiceDemoConstructorInjec = applicationContext.getBean(PrinterServiceDemoConstructorInjec.class);
+            assertEquals(printerServiceDemoConstructorInjec.getClass(), PrinterServiceDemoConstructorInjec.class);
+
+            printerServiceDemoConstructorInjec.printMessage();
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("NoSuchBeanException is thrown when there is no bean")
+        void getNoSuchBeanException() {
+            assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN));
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
+        void getNoUniqueBeanException() {
+            assertThrows(NoUniqueBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN));
         }
 
     }

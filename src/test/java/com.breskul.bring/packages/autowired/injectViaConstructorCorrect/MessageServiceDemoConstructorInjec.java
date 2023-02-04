@@ -4,6 +4,8 @@ import com.breskul.bring.annotations.Component;
 
 @Component
 public class MessageServiceDemoConstructorInjec {
+
+    public MessageServiceDemoConstructorInjec(){}
     private String message;
 
     public void setMessage(String message) {
