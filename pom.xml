@@ -23,9 +23,9 @@
             <version>0.10.2</version>
         </dependency>
         <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib</artifactId>
-            <version>3.3.0</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>6.0.4</version>
         </dependency>
 
         <!-- logging libs -->
