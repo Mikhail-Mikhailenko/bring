@@ -14,6 +14,7 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -229,7 +230,11 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
         if (beans.size() > 1) {
-            throw new NoUniqueBeanException(this.getClass().getName(), beanType.getName());
+            final String beanNames = beans.entrySet().stream().map(Entry::getKey).collect(Collectors.joining(","));
+            throw new NoUniqueBeanException(this.getClass().getName(),
+                beanType.getName(),
+                beans.size(),
+                beanNames);
         }
         return beans.values().stream()
                 .findFirst()
