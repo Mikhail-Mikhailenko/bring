@@ -10,7 +10,6 @@ import com.breskul.bring.exceptions.NoUniqueBeanException;
 
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
