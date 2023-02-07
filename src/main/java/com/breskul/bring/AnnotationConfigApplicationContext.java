@@ -167,7 +167,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         Constructor<?>[] constructors = beanClass.getConstructors();
         for (Constructor<?> constructor : constructors) {
             for (Class<?> parameterType : constructor.getParameterTypes()) {
-                assignBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+                injectBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
 
             }
         }
@@ -187,7 +187,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             if (method.getName().startsWith("set") && method.isAnnotationPresent(Autowired.class)) {
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 for (Class<?> parameterType : parameterTypes) {
-                    assignBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+                    injectBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
 
                 }
             }
@@ -205,7 +205,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @param beanInstance           {@link Object}
      * @param fieldTypeStringNameMap {@link Map}
      */
-    private <T> void assignBeans(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
+    private <T> void injectBeans(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
         boolean multipleBeansExpected = multipleBeansExpected(parameterType);
 
         String parameterName = fieldTypeStringNameMap.get(parameterType);
