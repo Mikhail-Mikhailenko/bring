@@ -4,6 +4,7 @@ import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Bean;
 import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
+import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
 import org.apache.commons.text.WordUtils;
@@ -57,7 +58,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     /**
      * <h3>Create proxy for {@link Configuration} annotation</h3>
      *
-     * @param name    {@link String}
+     * @param name         {@link String}
      * @param beanInstance {@link Object}
      */
     private void createConfigurationProxy(String name, Object beanInstance) {
@@ -159,44 +160,101 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     /**
      * <h3>Injects Bean via {@link Constructor}</h3>
      *
-     * @param beanClass    {@link Class}
-     * @param beanInstance {@link Object}
+     * @param beanClass              {@link Class}
+     * @param beanInstance           {@link Object}
+     * @param fieldTypeStringNameMap {@link Map}
      */
     private <T> void injectBeanViaConstructor(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap) throws NoSuchFieldException, IllegalAccessException {
 
         Constructor<?>[] constructors = beanClass.getConstructors();
         for (Constructor<?> constructor : constructors) {
-            for (Parameter parameter : constructor.getParameters()) {
-                Class<?> parameterType = parameter.getType();
-                var autowiredBeansInstance = getBean(parameterType);
-                String parameterName = fieldTypeStringNameMap.get(parameterType);
-                Field field = beanClass.getDeclaredField(parameterName);
-                field.setAccessible(true);
-                field.set(beanInstance, autowiredBeansInstance);
+            for (Class<?> parameterType : constructor.getParameterTypes()) {
+                assignBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+
             }
         }
     }
+
     /**
      * <h3>Injects Bean via Setter </h3>
      *
-     * @param beanClass    {@link Class}
-     * @param beanInstance {@link Object}
+     * @param beanClass              {@link Class}
+     * @param beanInstance           {@link Object}
+     * @param fieldTypeStringNameMap {@link Map}
      */
 
     private <T> void injectBeanViaSetter(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap) throws NoSuchFieldException, IllegalAccessException {
         Method[] beanMethods = beanClass.getDeclaredMethods();
-        for (Method method: beanMethods){
-            if (method.getName().startsWith("set") && method.isAnnotationPresent(Autowired.class)){
+        for (Method method : beanMethods) {
+            if (method.getName().startsWith("set") && method.isAnnotationPresent(Autowired.class)) {
                 Class<?>[] parameterTypes = method.getParameterTypes();
-                for (Class<?> parameterType: parameterTypes){
-                    var autowiredBeansInstance = getBean(parameterType);
-                    String parameterName = fieldTypeStringNameMap.get(parameterType);
-                    Field field = beanClass.getDeclaredField(parameterName);
-                    field.setAccessible(true);
-                    field.set(beanInstance, autowiredBeansInstance);
+                for (Class<?> parameterType : parameterTypes) {
+                    assignBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+
                 }
             }
         }
+    }
+    /**
+     * <h3>Assign bean instance to the field of the class</h3>
+     * <p>Assigns the bean instance to the parent Class field </p>
+     * <p>{@link AnnotationConfigApplicationContext#multipleBeansExpected(Class)} is used to check whether {@link List} of beans are expected</p>
+     * <p>If list is expected then {@link AnnotationConfigApplicationContext#getElementListType(Class)} is used to determine parameter of the elements in {@link List}</p>
+     * <p>If one bean expected, {@link Field} is assigned with bean instance value</p>
+     *
+     * @param beanClass {@link Class}
+     * @param beanInstance {@link Object}
+     * @param fieldTypeStringNameMap {@link Map}
+     */
+    private <T> void assignBeans(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
+        boolean multipleBeansExpected = multipleBeansExpected(parameterType);
+
+        String parameterName = fieldTypeStringNameMap.get(parameterType);
+        Field field = beanClass.getDeclaredField(parameterName);
+        field.setAccessible(true);
+
+        if (multipleBeansExpected){
+            Class<?> listParameterType = getElementListType(beanClass);
+            Map<String, ?> beans = getAllBeans(listParameterType);
+            field.set(beanInstance, new ArrayList<>(beans.values()));
+        } else {
+            var autowiredBeansInstance = getBean(parameterType);
+            field.set(beanInstance, autowiredBeansInstance);
+        }
+    }
+    /**
+     * <h3>Check whether multiple beans are expected </h3>
+     * <p>checks whether field of class is of type {@link List} </p>
+     *
+     * @param parameterType {@link Class}
+     * @return {@link Boolean}
+     */
+
+    private boolean multipleBeansExpected(Class<?> parameterType) {
+        return List.class.isAssignableFrom(parameterType);
+    }
+
+    /**
+     * <h3>Get Class type of the elements in List </h3>
+     * <p> finds the class of elements in the {@link List} </p>
+     *
+     * @param parentClass {@link Class}
+     * @return {@link Class}
+     */
+    private Class<?> getElementListType(Class<?> parentClass) {
+        Field[] fields = parentClass.getDeclaredFields();
+        for (Field field : fields) {
+            Type genericType = field.getGenericType();
+            ParameterizedType parameterizedType = (ParameterizedType) genericType;
+            if (parameterizedType.getRawType().equals(List.class)) {
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                if (typeArguments.length == 1 && typeArguments[0] instanceof Class) {
+                    return (Class<?>) typeArguments[0];
+
+                }
+            }
+        }
+        throw new BeanInitializingException(String.format("Unable to specify the List element type for class %s", parentClass.getName()));
     }
 
     /**
@@ -222,10 +280,31 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         return entry -> beanType.isAssignableFrom(entry.getValue().getClass());
     }
 
+    /**
+     * <h3>Finds bean from Application Context</h3>
+     * <p>finds bean if only one is expected</p>
+     *
+     * @param beanType {@link Class}
+     * @return {@link Object}
+     */
+
     @Override
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {
+        return getBean(beanType, true);
+    }
+
+    /**
+     * <h3>Finds bean from Application Context</h3>
+     * <p>Special form of getBean method if we expect to receive multiple beans</p>
+     *
+     * @param beanType        {@link Class}
+     * @param oneBeanExpected {@link Boolean}
+     * @return {@link Object}
+     */
+
+    public <T> T getBean(Class<T> beanType, boolean oneBeanExpected) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
-        if (beans.size() > 1) {
+        if (beans.size() > 1 && oneBeanExpected) {
             throw new NoUniqueBeanException("Bean type: " + beanType.getName());
         }
         return beans.values().stream()
@@ -235,6 +314,14 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 });
     }
 
+    /**
+     * <h3>Finds bean from Application Context</h3>
+     * <p>finds bean by name and type if we expect only one bean</p>
+     *
+     * @param name     {@link String}
+     * @param beanType {@link Class}
+     * @return {@link Object}
+     */
     @Override
     public <T> T getBean(String name, Class<T> beanType) throws NoSuchBeanException {
         Objects.requireNonNull(name);
@@ -247,10 +334,20 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 });
     }
 
+    /**
+     * <h3>Produces beans {@link Map} based on type </h3>
+     *
+     * @param beanType {@link Class}
+     * @return {@link Map}
+     */
     @Override
     public <T> Map<String, T> getAllBeans(Class<T> beanType) {
-        return context.entrySet().stream()
+        Map<String, T> beansMap = context.entrySet().stream()
                 .filter(filterByBeanType(beanType))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> beanType.cast(entry.getValue())));
+        if (beansMap.isEmpty()){
+            throw new NoSuchBeanException("Bean name: " + beanType.getSimpleName() + "; Bean type: " + beanType.getName());
+        }
+        return beansMap;
     }
 }
