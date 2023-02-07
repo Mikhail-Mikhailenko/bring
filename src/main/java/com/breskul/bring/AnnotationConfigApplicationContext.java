@@ -290,28 +290,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
     @Override
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {
-        return getBean(beanType, true);
-    }
-
-    /**
-     * <h3>Finds bean from Application Context</h3>
-     * <p>Special form of getBean method if we expect to receive multiple beans</p>
-     *
-     * @param beanType        {@link Class}
-     * @param oneBeanExpected {@link Boolean}
-     * @return {@link Object}
-     */
-
-    public <T> T getBean(Class<T> beanType, boolean oneBeanExpected) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
-        final String beanNames = String.join(",", beans.keySet());
-        if (beans.size() > 1 && oneBeanExpected) {
-            throw new NoUniqueBeanException(this.getClass().getName(),
-                    beanType.getName(),
-                    beans.size(),
-                    beanNames);
-        }
         if (beans.size() > 1) {
+            final String beanNames = String.join(",", beans.keySet());
             throw new NoUniqueBeanException(this.getClass().getName(),
                     beanType.getName(),
                     beans.size(),
@@ -322,7 +303,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .orElseThrow(() -> {
                     throw new NoSuchBeanException(this.getClass().getName(), beanType.getName());
                 });
-
     }
 
 
