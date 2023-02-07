@@ -186,7 +186,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     private <T> void injectBeanViaSetter(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap) throws NoSuchFieldException, IllegalAccessException {
         Method[] beanMethods = beanClass.getDeclaredMethods();
         for (Method method: beanMethods){
-            if (method.getName().startsWith("set") && method.isAnnotationPresent(Bean.class)){
+            if (method.getName().startsWith("set") && method.isAnnotationPresent(Autowired.class)){
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 for (Class<?> parameterType: parameterTypes){
                     var autowiredBeansInstance = getBean(parameterType);

@@ -1,6 +1,6 @@
 package com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean;
 
-import com.breskul.bring.annotations.Bean;
+import com.breskul.bring.annotations.Autowired;
 import com.breskul.bring.annotations.Component;
 
 import java.lang.reflect.Field;
@@ -10,7 +10,7 @@ public class ComponentInstance {
 
     Field nonExistentComponent;
 
-    @Bean
+    @Autowired
     public void setNonExistentComponent(Field nonExistentComponent) {
         this.nonExistentComponent = nonExistentComponent;
     }
