@@ -243,9 +243,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @return {@link Class}
      */
     private Class<?> getElementListType(Class<?> parentClass) {
-        List<String> list = null;
-
-
         Field[] fields = parentClass.getDeclaredFields();
         for (Field field : fields) {
             Type genericType = field.getGenericType();
