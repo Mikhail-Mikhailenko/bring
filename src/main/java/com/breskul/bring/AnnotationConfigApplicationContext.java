@@ -6,6 +6,19 @@ import com.breskul.bring.annotations.Component;
 import com.breskul.bring.annotations.Configuration;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -14,14 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.MethodInterceptor;
 
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 /**
- * <h3>Standalone application context, accepting component classes as input</h3>
+ * Standalone application context, accepting component classes as input
  * <p>Classes should be annotated with  {@link Configuration} and {@link Component}</p>
  */
 public class AnnotationConfigApplicationContext implements ApplicationContext {
@@ -134,10 +141,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
-        } catch (NoSuchBeanException e) {
-            throw new NoSuchBeanException("NO_SUCH_BEAN_EXCEPTION");
         }
-
     }
 
     /**
@@ -226,12 +230,16 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     public <T> T getBean(Class<T> beanType) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
         if (beans.size() > 1) {
-            throw new NoUniqueBeanException("Bean type: " + beanType.getName());
+            final String beanNames = beans.entrySet().stream().map(Entry::getKey).collect(Collectors.joining(","));
+            throw new NoUniqueBeanException(this.getClass().getName(),
+                beanType.getName(),
+                beans.size(),
+                beanNames);
         }
         return beans.values().stream()
                 .findFirst()
                 .orElseThrow(() -> {
-                    throw new NoSuchBeanException("Bean type: " + beanType.getName());
+                    throw new NoSuchBeanException(this.getClass().getName(), beanType.getName());
                 });
     }
 
@@ -243,7 +251,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .map(Map.Entry::getValue)
                 .findAny()
                 .orElseThrow(() -> {
-                    throw new NoSuchBeanException("Bean name: " + name + "; Bean type: " + beanType.getName());
+                    throw new NoSuchBeanException(this.getClass().getName(), name, beanType.getName());
                 });
     }
 
