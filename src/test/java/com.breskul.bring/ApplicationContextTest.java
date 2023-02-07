@@ -4,6 +4,8 @@ import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
+import com.breskul.bring.packages.autowired.injectBeansList.Constructor.DataBaseConstructor;
+import com.breskul.bring.packages.autowired.injectBeansList.Setter.DataBaseSetter;
 import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.ListenerServiceConstructorInjec;
 import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.MessageServiceDemoConstructorInjec;
 import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.PrinterServiceDemoConstructorInjec;
@@ -291,6 +293,51 @@ public class ApplicationContextTest {
         @DisplayName("NoUniqueBeanException is thrown when there are 2 or more same class beans")
         void getNoUniqueBeanException() {
             assertThrows(NoUniqueBeanException.class, () -> new AnnotationConfigApplicationContext(INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN));
+        }
+
+    }
+
+
+    @Nested
+    @Order(6)
+    @DisplayName("6. Inject List of Beans")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class InjectListBeans{
+        private static final String INJECT_BEANS_VIA_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.Constructor";
+
+        private static final String INJECT_BEANS_VIA_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.Setter";
+        private static final String NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.ConstructorNoSuchBean";
+        private static final String NO_SUCH_BEAN_EXCEPTION_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.SetterNoSuchBean";
+
+        @Test
+        @Order(1)
+        @DisplayName("List of beans are correctly injected via Constructor")
+        void injectListBeansViaConstructor() {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_CONSTRUCTOR);
+            DataBaseConstructor dataBaseConstructor = applicationContext.getBean(DataBaseConstructor.class);
+            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            dataBaseConstructor.connect();
+
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("List of beans are correctly injected via Setter")
+        void injectListBeansViaSetter() {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_SETTER);
+            DataBaseSetter dataBaseConstructor = applicationContext.getBean(DataBaseSetter.class);
+            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            dataBaseConstructor.connect();
+
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("No Such Bean Excpetion is thrown for List injection")
+        void  testNoSuchBeanException() {
+            assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR));
+            assertThrows(NoSuchBeanException.class, () -> new AnnotationConfigApplicationContext(NO_SUCH_BEAN_EXCEPTION_SETTER));
+
         }
 
     }
