@@ -167,7 +167,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         Constructor<?>[] constructors = beanClass.getConstructors();
         for (Constructor<?> constructor : constructors) {
             for (Class<?> parameterType : constructor.getParameterTypes()) {
-                injectBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+                String parameterName = fieldTypeStringNameMap.get(parameterType);
+                injectBeans(beanClass, beanInstance, parameterName, parameterType);
 
             }
         }
@@ -187,7 +188,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             if (method.getName().startsWith("set") && method.isAnnotationPresent(Autowired.class)) {
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 for (Class<?> parameterType : parameterTypes) {
-                    injectBeans(beanClass, beanInstance, fieldTypeStringNameMap, parameterType);
+                    String parameterName = fieldTypeStringNameMap.get(parameterType);
+                    injectBeans(beanClass, beanInstance, parameterName, parameterType);
 
                 }
             }
@@ -201,14 +203,13 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * <p>If list is expected then {@link AnnotationConfigApplicationContext#getElementListType(Class)} is used to determine parameter of the elements in {@link List}</p>
      * <p>If one bean expected, {@link Field} is assigned with bean instance value</p>
      *
-     * @param beanClass              {@link Class}
-     * @param beanInstance           {@link Object}
-     * @param fieldTypeStringNameMap {@link Map}
+     * @param beanClass     {@link Class}
+     * @param beanInstance  {@link Object}
+     * @param parameterType {@link String}
      */
-    private <T> void injectBeans(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
+    private <T> void injectBeans(Class<?> beanClass, T beanInstance, String parameterName, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
         boolean multipleBeansExpected = multipleBeansExpected(parameterType);
 
-        String parameterName = fieldTypeStringNameMap.get(parameterType);
         Field field = beanClass.getDeclaredField(parameterName);
         field.setAccessible(true);
 
@@ -242,6 +243,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @return {@link Class}
      */
     private Class<?> getElementListType(Class<?> parentClass) {
+        List<String> list = null;
+
+
         Field[] fields = parentClass.getDeclaredFields();
         for (Field field : fields) {
             Type genericType = field.getGenericType();
@@ -337,7 +341,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         Map<String, T> beansMap = context.entrySet().stream()
                 .filter(filterByBeanType(beanType))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> beanType.cast(entry.getValue())));
-        if (beansMap.isEmpty()){
+        if (beansMap.isEmpty()) {
             throw new NoSuchBeanException(this.getClass().getName(), beanType.getName(), beanType.getName());
         }
         return beansMap;
