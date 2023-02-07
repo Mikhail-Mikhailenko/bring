@@ -7,19 +7,14 @@ import com.breskul.bring.annotations.Configuration;
 import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.lang.reflect.*;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.apache.commons.text.WordUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
@@ -199,6 +194,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         }
     }
+
     /**
      * <h3>Assign bean instance to the field of the class</h3>
      * <p>Assigns the bean instance to the parent Class field </p>
@@ -206,8 +202,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * <p>If list is expected then {@link AnnotationConfigApplicationContext#getElementListType(Class)} is used to determine parameter of the elements in {@link List}</p>
      * <p>If one bean expected, {@link Field} is assigned with bean instance value</p>
      *
-     * @param beanClass {@link Class}
-     * @param beanInstance {@link Object}
+     * @param beanClass              {@link Class}
+     * @param beanInstance           {@link Object}
      * @param fieldTypeStringNameMap {@link Map}
      */
     private <T> void assignBeans(Class<?> beanClass, T beanInstance, Map<Class<?>, String> fieldTypeStringNameMap, Class<?> parameterType) throws NoSuchFieldException, IllegalAccessException {
@@ -217,7 +213,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         Field field = beanClass.getDeclaredField(parameterName);
         field.setAccessible(true);
 
-        if (multipleBeansExpected){
+        if (multipleBeansExpected) {
             Class<?> listParameterType = getElementListType(beanClass);
             Map<String, ?> beans = getAllBeans(listParameterType);
             field.set(beanInstance, new ArrayList<>(beans.values()));
@@ -226,6 +222,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             field.set(beanInstance, autowiredBeansInstance);
         }
     }
+
     /**
      * <h3>Check whether multiple beans are expected </h3>
      * <p>checks whether field of class is of type {@link List} </p>
@@ -308,21 +305,27 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
 
     public <T> T getBean(Class<T> beanType, boolean oneBeanExpected) throws NoSuchBeanException, NoUniqueBeanException {
         Map<String, T> beans = getAllBeans(beanType);
+        final String beanNames = String.join(",", beans.keySet());
         if (beans.size() > 1 && oneBeanExpected) {
-            throw new NoUniqueBeanException("Bean type: " + beanType.getName());
-        if (beans.size() > 1) {
-            final String beanNames = beans.entrySet().stream().map(Entry::getKey).collect(Collectors.joining(","));
             throw new NoUniqueBeanException(this.getClass().getName(),
-                beanType.getName(),
-                beans.size(),
-                beanNames);
+                    beanType.getName(),
+                    beans.size(),
+                    beanNames);
+        }
+        if (beans.size() > 1) {
+            throw new NoUniqueBeanException(this.getClass().getName(),
+                    beanType.getName(),
+                    beans.size(),
+                    beanNames);
         }
         return beans.values().stream()
                 .findFirst()
                 .orElseThrow(() -> {
                     throw new NoSuchBeanException(this.getClass().getName(), beanType.getName());
                 });
+
     }
+
 
     /**
      * <h3>Finds bean from Application Context</h3>
@@ -356,7 +359,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .filter(filterByBeanType(beanType))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> beanType.cast(entry.getValue())));
         if (beansMap.isEmpty()){
-            throw new NoSuchBeanException("Bean name: " + beanType.getSimpleName() + "; Bean type: " + beanType.getName());
+            throw new NoSuchBeanException(this.getClass().getName(), beanType.getName(), beanType.getName());
         }
         return beansMap;
     }
