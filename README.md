@@ -35,7 +35,31 @@ To get javadoc, please do the follow commands:
 mvn -X clean javadoc:aggregate-jar
 ```
 
-#### How to use?
+## How to use?
+
+### List of features
+* IoC container
+* set up of beans
+* injection 
+  * via constructor
+  * via field
+  * via setter
+  * inject list of beans 
+* resolve circle dependency 
+* inter bean dependency 
+### Code examples
+
+#### Create context;
+##### Description of methods.
+
+#### Configure beans
+##### Component Configuration and Bean
+
+#### Injections
+##### Via constructor 
+##### Via field
+##### Via setter
+
 
 * The whole idea of a dependency injection is built on annotations.
   If you want to give up control of your class to a bring project, you need to add the @Component annotation on the java
