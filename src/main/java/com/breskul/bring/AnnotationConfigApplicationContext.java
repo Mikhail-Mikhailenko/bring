@@ -95,7 +95,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             }
         } while(!unregisteredClassesList.isEmpty() && unregisteredClassesList.size() != beanClasses.size());
         if (!unregisteredClassesList.isEmpty()) {
-            throw new BeanInitializingException("Circular dependency");
+            throw new BeanInitializingException(unregisteredClassesList.get(0).getName(),
+                    "Circular dependency detected",
+                    "Use field or setters autowire");
         }
     }
 
@@ -116,10 +118,14 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 var bean = createInstanceViaConstructor(defaultConstructor);
                 addComponentToContext(bean, beanClass);
             } else {
-                throw new BeanInitializingException("No default bean constructor");
+                throw new BeanInitializingException(beanClass.getName(),
+                        "No default bean constructor",
+                        "Use one public constructor or add a default constructor");
             }
         } else {
-            throw new BeanInitializingException("No default bean constructor");
+            throw new BeanInitializingException(beanClass.getName(),
+                    "No default bean constructor",
+                    "Add public constructor");
         }
         return true;
     }

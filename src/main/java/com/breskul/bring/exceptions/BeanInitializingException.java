@@ -7,11 +7,15 @@ package com.breskul.bring.exceptions;
  */
 public class BeanInitializingException extends CommonException {
 
-  public static final String CAUSE = "";
+  public static final String LOCATION = "";
   public static final String SUGGESTED_SOLUTION = "";
 
-  public BeanInitializingException(String location) {
-    super(location, CAUSE, SUGGESTED_SOLUTION);
+  public BeanInitializingException(String cause) {
+    super(LOCATION, cause, SUGGESTED_SOLUTION);
+  }
+
+  public BeanInitializingException(String location, String cause, String solution){
+    super(location, cause, solution);
   }
 
 }
