@@ -76,22 +76,86 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
     }
 
     private void loadComponents() {
-        Arrays.stream(packagePaths)
+        var beanClassesList = Arrays.stream(packagePaths)
                 .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
                 .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
-                .forEach(this::registerComponentsBeansInContext);
+                .toList();
+        registerComponentsBeansInContext(beanClassesList);
     }
 
-    private void registerComponentsBeansInContext(Class<?> beanClass) {
-        try {
-            var constructor = beanClass.getConstructor();
-            var beanInstance = constructor.newInstance();
-            String beanName = resolveBeanName(beanClass.getAnnotation(Component.class).value(), beanClass);
-            context.put(beanName, beanInstance);
-        } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
-                 IllegalAccessException e) {
-            throw new RuntimeException(e);
+    private void registerComponentsBeansInContext(List<Class<?>> beanClasses) {
+        List<Class<?>> unregisteredClassesList = beanClasses;
+        do {
+            beanClasses = unregisteredClassesList;
+            unregisteredClassesList = new ArrayList<>();
+            for (var beanClass : beanClasses) {
+                if (!registerComponentBeanInContext(beanClass)) {
+                    unregisteredClassesList.add(beanClass);
+                }
+            }
+        } while(!unregisteredClassesList.isEmpty() && unregisteredClassesList.size() != beanClasses.size());
+        if (!unregisteredClassesList.isEmpty()) {
+            throw new BeanInitializingException("Circular dependency");
         }
+    }
+
+    private boolean registerComponentBeanInContext(Class<?> beanClass) {
+        var constructors = beanClass.getConstructors();
+        if (constructors.length == 1) {
+            var constructor = constructors[0];
+            var parametersList = getConstructorParameterBeans(constructor);
+            if (parametersList != null) {
+                var bean = createInstanceViaConstructor(constructor, parametersList.toArray());
+                addComponentToContext(bean, beanClass);
+            } else {
+                return false;
+            }
+        } else if (constructors.length > 1) {
+            var defaultConstructor = getDefaultConstructor(constructors);
+            if (defaultConstructor != null) {
+                var bean = createInstanceViaConstructor(defaultConstructor);
+                addComponentToContext(bean, beanClass);
+            } else {
+                throw new BeanInitializingException("No default bean constructor");
+            }
+        } else {
+            throw new BeanInitializingException("No default bean constructor");
+        }
+        return true;
+    }
+
+    private List<Object> getConstructorParameterBeans(Constructor<?> constructor) {
+        List<Object> parametersList = new ArrayList<>();
+        for (Parameter parameter : constructor.getParameters()) {
+            Class<?> parameterType = parameter.getType();
+            try {
+                var parameterInstance = getBean(parameterType);
+                parametersList.add(parameterInstance);
+            } catch (NoSuchBeanException e) {
+                return null;
+            }
+        }
+        return parametersList;
+    }
+
+    private Object createInstanceViaConstructor(Constructor<?> constructor, Object... parameters) {
+        try {
+            return constructor.newInstance(parameters);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new BeanInitializingException(e.getMessage());
+        }
+    }
+
+    private void addComponentToContext(Object bean, Class<?> beanClass) {
+        String beanName = resolveBeanName(beanClass.getAnnotation(Component.class).value(), beanClass);
+        context.put(beanName, bean);
+    }
+
+    private Constructor<?> getDefaultConstructor(Constructor<?>[] constructors) {
+        return Arrays.stream(constructors)
+                .filter(constructor -> constructor.getParameterCount() == 0)
+                .findFirst()
+                .orElse(null);
     }
 
     private void loadConfigurations() throws RuntimeException {
