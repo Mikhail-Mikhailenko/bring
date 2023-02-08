@@ -80,28 +80,25 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
                 .flatMap(reflections -> reflections.getTypesAnnotatedWith(Component.class).stream())
                 .toList();
-        registerComponentsBeansInContext(beanClassesList);
+        registerComponents(beanClassesList);
     }
 
-    private void registerComponentsBeansInContext(List<Class<?>> beanClasses) {
-        List<Class<?>> unregisteredClassesList = beanClasses;
+    private void registerComponents(List<Class<?>> beanClasses) {
+        List<Class<?>> unregistered = new ArrayList<>(beanClasses);
+        int size;
+
         do {
-            beanClasses = unregisteredClassesList;
-            unregisteredClassesList = new ArrayList<>();
-            for (var beanClass : beanClasses) {
-                if (!registerComponentBeanInContext(beanClass)) {
-                    unregisteredClassesList.add(beanClass);
-                }
-            }
-        } while(!unregisteredClassesList.isEmpty() && unregisteredClassesList.size() != beanClasses.size());
-        if (!unregisteredClassesList.isEmpty()) {
-            throw new BeanInitializingException(unregisteredClassesList.get(0).getName(),
+            size = unregistered.size();
+            unregistered.removeIf(this::registerComponent);
+        } while (!unregistered.isEmpty() && unregistered.size() != size);
+        if (!unregistered.isEmpty()) {
+            throw new BeanInitializingException(unregistered.stream().findFirst().get().getName(),
                     "Circular dependency detected",
                     "Use field or setters autowire");
         }
     }
 
-    private boolean registerComponentBeanInContext(Class<?> beanClass) {
+    private boolean registerComponent(Class<?> beanClass) {
         var constructors = beanClass.getConstructors();
         if (constructors.length == 1) {
             var constructor = constructors[0];
