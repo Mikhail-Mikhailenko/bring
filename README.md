@@ -98,3 +98,12 @@ public class AppConfig {
 var context = new AnnotationConfigApplicationContext("com.example");
 var myService = context.getBean(MyService.class);
 ```
+
+Another great feature is that Bring can inject beans for classes in collections. For example, if you have such a
+field  `List<DataService>` then the Bring will create instances of all classes that implement that interface and put it
+to the map. You can inject through a field, constructor, and setter.
+```agsl
+@Autowired
+private List<DataService> randomService;
+```
+
