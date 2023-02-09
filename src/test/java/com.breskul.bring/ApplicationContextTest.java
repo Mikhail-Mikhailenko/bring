@@ -1,5 +1,6 @@
 package com.breskul.bring;
 
+import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
@@ -12,6 +13,9 @@ import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.PrinterS
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.ListenerServiceSetterInjection;
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.MessageServiceDemoSetterInjection;
 import com.breskul.bring.packages.autowired.injectViaSetterCorrect.PrinterServiceDemoSetterInjection;
+import com.breskul.bring.packages.circular.correct.CircularComponent1;
+import com.breskul.bring.packages.circular.correct.CircularComponent2;
+import com.breskul.bring.packages.circular.correct.CircularComponent3;
 import com.breskul.bring.packages.components.Component1;
 import com.breskul.bring.packages.components.Component2;
 import com.breskul.bring.packages.components.SameBeanInterface;
@@ -340,6 +344,36 @@ public class ApplicationContextTest {
 
         }
 
+    }
+
+    @Nested
+    @Order(7)
+    @DisplayName("7. Circular Dependencies")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class CircularDependencies {
+        private static final String CIRCULAR_DEPENDENCIES_CORRECT_PACKAGE = "com.breskul.bring.packages.circular.correct";
+        private static final String CIRCULAR_DEPENDENCIES_ERROR_PACKAGE = "com.breskul.bring.packages.circular.error";
+        @Test
+        @Order(1)
+        @DisplayName("Circular Dependencies are resolved")
+        void loadConfiguration() {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CIRCULAR_DEPENDENCIES_CORRECT_PACKAGE);
+            CircularComponent1 component1 = applicationContext.getBean(CircularComponent1.class);
+            assertEquals(component1.getClass(), CircularComponent1.class);
+
+            CircularComponent2 component2 = applicationContext.getBean(CircularComponent2.class);
+            assertEquals(component2.getClass(), CircularComponent2.class);
+
+            CircularComponent3 component3 = applicationContext.getBean(CircularComponent3.class);
+            assertEquals(component3.getClass(), CircularComponent3.class);
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Circular Dependency error")
+        void getNoSuchBeanException() {
+            assertThrows(BeanInitializingException.class, () -> new AnnotationConfigApplicationContext(CIRCULAR_DEPENDENCIES_ERROR_PACKAGE));
+        }
     }
 
 }
