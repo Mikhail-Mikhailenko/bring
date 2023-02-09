@@ -60,6 +60,10 @@ mvn -X clean javadoc:aggregate-jar
 
 #### Configure beans
 
+    @Component
+    public class RandomService {
+    }
+
 ##### Component Configuration and Bean
 
     @Configuration
@@ -92,3 +96,9 @@ mvn -X clean javadoc:aggregate-jar
     public void setRandomService(RandomService randomService) {
       this.randomService = randomService;
     }
+
+##### Via list of objects
+
+    @Autowired
+    private List<DataService> randomService;
+
