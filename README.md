@@ -131,3 +131,37 @@ to the map. You can inject through a field, constructor, and setter.
 private List<DataService> randomService;
 ```
 
+## How to add to project?
+
+You can add Bring Framework to your project in several ways:
+
+* Download jar
+* Add Maven dependency
+
+### JAR File
+##### Download jar
+
+* Go to Packages of Bring Framework project: https://github.com/Mikhail-Mikhailenko/bring/packages/1787566
+
+* Download JAR File from Assets in the Latest version.
+
+##### Install jar
+
+- You can include that jar in your classpath of application
+- Either you can install that jar file in your maven repos using command:
+```agsl
+mvn install:install-file -Dfile=<path-to-file> -DgroupId=<group-id> \
+-DartifactId=<artifact-id> -Dversion=<version> -Dpackaging=<packaging>
+```
+
+### Maven Dependency
+
+* Add authentication to Github Packages  by editing your `~/.m2/settings.xml` using following instructions (your repository url will be `https://maven.pkg.github.com/Mikhail-Mikhailenko/bring`):
+  
+    - https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-to-github-packages
+
+* Go to Packages of Bring Framework project: https://github.com/Mikhail-Mikhailenko/bring/packages/1787566
+
+* Copy dependency of the Latest version.
+
+* Add dependency to `pom.xml` of your Project.
