@@ -68,68 +68,185 @@ mvn -X clean javadoc:aggregate-jar
 
 ### List of features
 
-* IoC container
-* set up of beans
-* injection
-  * via constructor
-  * via field
-  * via setter
-  * inject list of beans
-* resolve circle dependency
-* inter bean dependency
+* **_IoC container_** - container is a core component of the Bring Framework. It is responsible for managing the creation, configuration, and assembly of objects in an application.
+  The IoC container acts as a central manager for the components in an application, enabling the developer to focus on writing the business logic rather than managing the object creation and assembly.
+#### Ioc Pattern Example
+    package com.demo
+    @Component
+    class MessageService{
+          private String message;
 
-### Code examples
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    @Component
+    class PrinterService{
+          
+          private MessageService messageService;
+          @Autowired
+          public void setMessageService(MessageService messageService){
+                this.messageService = messageService
+          }
+          public void print(){
+              System.out.println(messageService.getMessage())
+          }
+    }
+    var context = new AnnotationConfigApplicationContext("com.demo");
+    var messageService = context.getBean(MessageService.class);
+    var printerService = context.getBean(PrinterService.class);
+    messageService.setMessage("MY_MESSAGE");
+    printerService.print();  -> "MY_MESSAGE"
+<p> In example above MessageService instance is set to the field of messageService of the PrinterService by Bring Framework. 
+Developer does not need to create instance of MessageService in PrinterService himself all is managed by IoC container. Bring framework automatically detects 
+Autowired annoation and injects instance</p>
 
-#### Create context
+* **_Annotations_**
+  * @Component - annotation that used to register instance of class in Context. Default value is empty string. Alternatively, name of component can specified through the **_value_**
+  * @Bean - annotatin that used to mark any dependecy that we need. Bring will register singletone instance in container. Custom name can specified with **_value_**
+  * @Configuration - annotation that used to create a configuration class. Proxy will be created for each bean with the annotation @Bean via CGLIB library.
+  * @Autowired - annotation that allows Bring IoC inject beans in class instance.
 
+* **_Context Creation_** - Package name (delimited by dot com.example) should be provided to Bring. Bring will scan all classes marked with @Component or @Bean and will register beans in context.
+#### Context Creation
     var context = new AnnotationConfigApplicationContext("com.example");
     var myService = context.getBean(MyService.class);
-
-##### Description of methods.
-
-#### Configure beans
-
-    @Component
-    public class RandomService {
-    }
-
+* Class configuration for dependecnies  - @Configuration is used to register bean dependencies. Bring Container will use CGLIB to create Proxy of the particular Bean Dependency 
 ##### Component Configuration and Bean
 
     @Configuration
     public class AppConfig {
     
         @Bean
-        public MyService() {
-           MyService myService = new MyService();
-           myService.setDatabaseHandler(RepositoryHandler.getSpecificDb("h2"));
+        public RestTemplate() {
+           return new RestTemplate()
         }
     }
 
-#### Injections
+* Several Injections are supported
+  * **_Injection Via Constructor_** - our IoC container automatically detects bean dependency written in constructor and injects corresponding bean.
+#### Injection Via Constructor
+    package com.demo
+    @Component
+    class MessageService{
+          private String message;
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    @Component
+    class PrinterService{
+          private MessageService messageService;
+          public PrinterService(MessageService messageService){
+              this.messageService = messageService
+          }
+          public void print(){
+              System.out.println(messageService.getMessage())
+          }
+    }
+  * **_Injection Via Field_** - our IoC container injects beans via annotation @Autowired
+#### Injection Via Field
+    package com.demo
+    @Component
+    class MessageService{
+          private String message;
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    @Component
+    class PrinterService{
+          @Autowired
+          private MessageService messageService;
+          
+          public void print(){
+              System.out.println(messageService.getMessage())
+          }
+    }
+  * **_Injection Via Setter_** - our IoC container injects beans via setter and annotation @Autowired
+#### Injection Via Setter
+    @Component
+    class MessageService{
+          private String message;
 
-##### Via constructor (the annotation is not required here)
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    
+    @Component
+    class PrinterService{
 
-    @Autowired
-    public MyService(RandomService randomService) {
-    this.randomService = randomService;
+          private MessageService messageService;
+          @Autowired
+          public void setMessageService(MessageService messageService){
+                this.messageService = messageService
+          }
+          public void print(){
+              System.out.println(messageService.getMessage())
+          }
+    }
+  * **_Injection of Beans List_** - our IoC container allows to inject List of beans if they implement same interface. 
+#### Injection of Beans List
+    @Component
+    class MessageService1 implements MessageInterface{
+          private String message;
+
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    @Component
+    class MessageService2 implements MessageInterface{
+          private String message;
+
+          public void setMessage(String message){
+              this.message = message
+          }
+          public String getMessage(){
+              return this.message;
+          }
+    }
+    @Component
+    class PrinterService{
+          private List<MessageInterface> messageServices;
+
+          @Autowired
+          public void setMessageService(List<MessageInterface> messageServices){
+                this.messageServices = messageServices
+          }
+    }
+  * **_Circle Dependency Resolution_** - our IoC container allows to resolve circualr dependecies correctly. Here component 1 depends on component 2 and  component 2 depends on component 1 
+#### Circle Dependency Resolution
+    @Component
+    public class CircularComponent2 {
+          @Autowired
+          private CircularComponent1 component1;
+    }
+    @Component
+    public class CircularComponent1 {
+        @Autowired
+        private CircularComponent2 component2;
+        public CircularComponent1(){
+      
+        }
     }
 
-##### Via field
-
-    @Autowired
-    private RandomService randomService;
-
-##### Via setter
-
-    @Autowired
-    public void setRandomService(RandomService randomService) {
-      this.randomService = randomService;
-    }
-
-##### Via list of objects
-
-    @Autowired
-    private List<DataService> randomService;
 
 ## How to add to project?
 
