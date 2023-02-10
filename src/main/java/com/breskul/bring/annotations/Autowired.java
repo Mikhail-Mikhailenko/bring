@@ -12,9 +12,7 @@ import java.lang.annotation.Target;
  * <p>In case of a {@link java.util.Collection} or {@link java.util.Map}
  * dependency type, the Bring will autowire all beans matching the
  * declared value type.
- *
  */
-
 @Target({ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Autowired {

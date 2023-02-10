@@ -8,9 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Indicates that a class declares one or more {@link Bean} methods and
  * using by Bring for generating and getting bean instances.
- *
  */
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Configuration {

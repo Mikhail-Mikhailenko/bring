@@ -24,19 +24,30 @@ import com.breskul.bring.packages.configurations.ConfiguredComponent1;
 import com.breskul.bring.packages.configurations.ConfiguredComponent2;
 import com.breskul.bring.packages.configurations.TestConfiguration;
 import com.breskul.bring.packages.configurations.TestCustomNameConfiguration;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.lang.reflect.Field;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @DisplayName("ApplicationContext tests")
 public class ApplicationContextTest {
-
 
     @Nested
     @Order(1)
@@ -44,8 +55,6 @@ public class ApplicationContextTest {
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class ApplicationContextInterfaceTest {
         private static final String COMPONENTS_PACKAGE_NAME = "com.breskul.bring.packages.components";
-
-
 
         @Test
         @Order(1)
@@ -105,6 +114,7 @@ public class ApplicationContextTest {
         private static final String AUTOWIRE_CORRECT_PACAKGE_NAME = "com.breskul.bring.packages.autowired.correct";
         private static final String AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nouniquebean";
         private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
+
         @Test
         @Order(1)
         @DisplayName("Bean is autowired correctly")
@@ -122,7 +132,6 @@ public class ApplicationContextTest {
         void autowiringGetNoUniqueBeanException() {
             assertThrows(NoUniqueBeanException.class,
                     () -> new AnnotationConfigApplicationContext(AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME));
-
         }
 
         @Test
