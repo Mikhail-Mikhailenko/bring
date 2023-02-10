@@ -13,6 +13,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -109,7 +110,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         if (!unregistered.isEmpty()) {
             throw new BeanInitializingException(unregistered.stream().findFirst().get().getName(),
                     "Circular dependency detected",
-                    "Use field or setters autowire");
+                    "Use field or setters for autowire");
         }
     }
 
@@ -160,7 +161,10 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
         try {
             return constructor.newInstance(parameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new BeanInitializingException(e.getMessage());
+            throw new BeanInitializingException(
+                    this.getClass().getName(),
+                    "Unsuccessful create bean instance vie constructor: " + e.getMessage()
+            );
         }
     }
 
@@ -198,34 +202,30 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 IllegalAccessException e) {
             throw new BeanInitializingException(
                     this.getClass().getName(),
-                    e.getMessage(),
-                    "Creation configuration bean with class [%s] failed. Look at the error".formatted(beanClass.getName())
+                    "Creation configuration bean with class [%s] failed. Error: " +  e.getMessage()
             );
         }
     }
 
     private void registerConfigurationsBeansInContext(Class<?> configClass) {
-        try {
-            var config = configClass.getDeclaredConstructor().newInstance();
-            Method[] methods = configClass.getDeclaredMethods();
-            for (Method method : methods) {
-                if (method.isAnnotationPresent(Bean.class)) {
-                    String beanName = resolveBeanName(method.getAnnotation(Bean.class).value(), method.getReturnType());
-                    method.setAccessible(true);
-                    var bean = method.invoke(config);
+        Object configurationBean = getBean(configClass);
+        for (Method method : configClass.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(Bean.class)) {
+                String beanName = resolveBeanName(method.getAnnotation(Bean.class).value(), method.getReturnType());
+                method.setAccessible(true);
+                try {
+                    Object bean = method.invoke(configurationBean);
                     context.put(beanName, bean);
                     LOGGER.info("Configuration bean successfully created for method: %s with name %s"
                             .formatted(method.getName(), beanName));
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new BeanInitializingException(
+                            configClass.getName(),
+                            "Unsuccessful create bean for method %s. Error: %s"
+                                    .formatted(method.getName(), e.getMessage())
+                    );
                 }
             }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
-                 | NoSuchMethodException e) {
-            throw new BeanInitializingException(
-                    this.getClass().getName(),
-                    e.getMessage(),
-                    "Creation configuration methods bean failed for class [%s]. Look at the error"
-                            .formatted(configClass.getName())
-            );
         }
     }
 
@@ -341,7 +341,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                     "Can not inject bean with class [%s] to field: %s"
                             .formatted(
                                     beanInstance.getClass().getName(),
-                                    Objects.nonNull(field) ? field.getName() : "unknown"
+                                    Objects.nonNull(field) ? field.getName() : "Unknown"
                             )
             );
         }
@@ -378,7 +378,9 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 }
             }
         }
-        throw new BeanInitializingException(this.getClass().getName(), String.format("Unable to specify the List element type for class %s", parentClass.getName()));
+        throw new BeanInitializingException(
+                this.getClass().getName(),
+                String.format("Unable to specify the List element type for class %s", parentClass.getName()));
     }
 
     /**
