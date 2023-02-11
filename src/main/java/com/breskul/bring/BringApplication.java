@@ -19,6 +19,6 @@ public class BringApplication {
    * @param args array of arguments
    */
   public static void main(String[] args) {
-    LOGGER.info("Hello, from Bring team!");
+    LOGGER.info("Hello, from Breskul team!");
   }
 }

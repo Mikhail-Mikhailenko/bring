@@ -1,17 +1,21 @@
 package com.breskul.bring;
 
+import com.breskul.bring.exceptions.BeanInitializingException;
 import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
-import com.breskul.bring.packages.autowired.injectBeansList.Constructor.DataBaseConstructor;
-import com.breskul.bring.packages.autowired.injectBeansList.Setter.DataBaseSetter;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.ListenerServiceConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.MessageServiceDemoConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.PrinterServiceDemoConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.ListenerServiceSetterInjection;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.MessageServiceDemoSetterInjection;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.PrinterServiceDemoSetterInjection;
+import com.breskul.bring.packages.autowired.inject_beans_list.Constructor.DataBaseConstructor;
+import com.breskul.bring.packages.autowired.inject_beans_list.Setter.DataBaseSetter;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.ListenerServiceConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.MessageServiceDemoConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.PrinterServiceDemoConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.ListenerServiceSetterInjection;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.MessageServiceDemoSetterInjection;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.PrinterServiceDemoSetterInjection;
+import com.breskul.bring.packages.circular.correct.CircularComponent1;
+import com.breskul.bring.packages.circular.correct.CircularComponent2;
+import com.breskul.bring.packages.circular.correct.CircularComponent3;
 import com.breskul.bring.packages.components.Component1;
 import com.breskul.bring.packages.components.Component2;
 import com.breskul.bring.packages.components.SameBeanInterface;
@@ -20,19 +24,30 @@ import com.breskul.bring.packages.configurations.ConfiguredComponent1;
 import com.breskul.bring.packages.configurations.ConfiguredComponent2;
 import com.breskul.bring.packages.configurations.TestConfiguration;
 import com.breskul.bring.packages.configurations.TestCustomNameConfiguration;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.lang.reflect.Field;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @DisplayName("ApplicationContext tests")
 public class ApplicationContextTest {
-
 
     @Nested
     @Order(1)
@@ -40,8 +55,6 @@ public class ApplicationContextTest {
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class ApplicationContextInterfaceTest {
         private static final String COMPONENTS_PACKAGE_NAME = "com.breskul.bring.packages.components";
-
-
 
         @Test
         @Order(1)
@@ -101,6 +114,7 @@ public class ApplicationContextTest {
         private static final String AUTOWIRE_CORRECT_PACAKGE_NAME = "com.breskul.bring.packages.autowired.correct";
         private static final String AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nouniquebean";
         private static final String AUTOWIRE_NO_SUCH_BEAN_PACAKGE_NAME = "com.breskul.bring.packages.autowired.nosuchbean";
+
         @Test
         @Order(1)
         @DisplayName("Bean is autowired correctly")
@@ -118,7 +132,6 @@ public class ApplicationContextTest {
         void autowiringGetNoUniqueBeanException() {
             assertThrows(NoUniqueBeanException.class,
                     () -> new AnnotationConfigApplicationContext(AUTOWIRE_NO_UNIQUE_BEAN_EXCEPTION_PACAKGE_NAME));
-
         }
 
         @Test
@@ -218,9 +231,9 @@ public class ApplicationContextTest {
     @DisplayName("4. Inject Bean Via Setter Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectBeanViaSetterTest {
-        private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.injectViaSetterCorrect";
-        private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean";
-        private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoUniqueBean";
+        private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.inject_via_setter_correct";
+        private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.inject_via_setter_no_such_bean";
+        private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.inject_via_setter_no_unique_bean";
         @Test
         @Order(1)
         @DisplayName("Beans are correctly injected via setter")
@@ -260,9 +273,9 @@ public class ApplicationContextTest {
     @DisplayName("5. Inject Beans via Constructor")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectBeansViaConstrucor {
-        private static final String INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT = "com.breskul.bring.packages.autowired.injectViaConstructorCorrect";
-        private static final String INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoSuchBean";
-        private static final String INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoUniqueBean";
+        private static final String INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT = "com.breskul.bring.packages.autowired.inject_via_constructor_correct";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.inject_via_constructor_no_such_bean";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.inject_via_constructor_no_unique_bean";
         @Test
         @Order(1)
         @DisplayName("Beans are correctly injected via constructor")
@@ -303,11 +316,11 @@ public class ApplicationContextTest {
     @DisplayName("6. Inject List of Beans")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectListBeans{
-        private static final String INJECT_BEANS_VIA_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.Constructor";
+        private static final String INJECT_BEANS_VIA_CONSTRUCTOR = "com.breskul.bring.packages.autowired.inject_beans_list.Constructor";
 
-        private static final String INJECT_BEANS_VIA_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.Setter";
-        private static final String NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.ConstructorNoSuchBean";
-        private static final String NO_SUCH_BEAN_EXCEPTION_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.SetterNoSuchBean";
+        private static final String INJECT_BEANS_VIA_SETTER = "com.breskul.bring.packages.autowired.inject_beans_list.Setter";
+        private static final String NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR = "com.breskul.bring.packages.autowired.inject_beans_list.ConstructorNoSuchBean";
+        private static final String NO_SUCH_BEAN_EXCEPTION_SETTER = "com.breskul.bring.packages.autowired.inject_beans_list.SetterNoSuchBean";
 
         @Test
         @Order(1)
@@ -315,7 +328,7 @@ public class ApplicationContextTest {
         void injectListBeansViaConstructor() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_CONSTRUCTOR);
             DataBaseConstructor dataBaseConstructor = applicationContext.getBean(DataBaseConstructor.class);
-            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            assertEquals(3, dataBaseConstructor.getDatabases().size());
             dataBaseConstructor.connect();
 
         }
@@ -326,7 +339,7 @@ public class ApplicationContextTest {
         void injectListBeansViaSetter() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_SETTER);
             DataBaseSetter dataBaseConstructor = applicationContext.getBean(DataBaseSetter.class);
-            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            assertEquals(3, dataBaseConstructor.getDatabases().size());
             dataBaseConstructor.connect();
 
         }
@@ -340,6 +353,36 @@ public class ApplicationContextTest {
 
         }
 
+    }
+
+    @Nested
+    @Order(7)
+    @DisplayName("7. Circular Dependencies")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class CircularDependencies {
+        private static final String CIRCULAR_DEPENDENCIES_CORRECT_PACKAGE = "com.breskul.bring.packages.circular.correct";
+        private static final String CIRCULAR_DEPENDENCIES_ERROR_PACKAGE = "com.breskul.bring.packages.circular.error";
+        @Test
+        @Order(1)
+        @DisplayName("Circular Dependencies are resolved")
+        void loadConfiguration() {
+            ApplicationContext applicationContext = new AnnotationConfigApplicationContext(CIRCULAR_DEPENDENCIES_CORRECT_PACKAGE);
+            CircularComponent1 component1 = applicationContext.getBean(CircularComponent1.class);
+            assertEquals(component1.getClass(), CircularComponent1.class);
+
+            CircularComponent2 component2 = applicationContext.getBean(CircularComponent2.class);
+            assertEquals(component2.getClass(), CircularComponent2.class);
+
+            CircularComponent3 component3 = applicationContext.getBean(CircularComponent3.class);
+            assertEquals(component3.getClass(), CircularComponent3.class);
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("Circular Dependency error")
+        void getNoSuchBeanException() {
+            assertThrows(BeanInitializingException.class, () -> new AnnotationConfigApplicationContext(CIRCULAR_DEPENDENCIES_ERROR_PACKAGE));
+        }
     }
 
 }

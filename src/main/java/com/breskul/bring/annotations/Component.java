@@ -10,7 +10,6 @@ import java.lang.annotation.Target;
  * Indicates that an annotated class is a component of framework.
  * Such classes will be detected and added to the context if it will be found
  * in scope of automatic scan packages.
- *
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
