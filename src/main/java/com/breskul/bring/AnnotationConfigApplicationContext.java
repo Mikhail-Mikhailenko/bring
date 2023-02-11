@@ -40,7 +40,7 @@ import org.springframework.cglib.proxy.MethodInterceptor;
  * <p>Methods should be annotated with  {@link Bean} inside {@link Configuration} bean</p>
  */
 public class AnnotationConfigApplicationContext implements ApplicationContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BringApplication.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationConfigApplicationContext.class);
     private final Map<String, Object> context = new ConcurrentHashMap<>();
     private final String[] packagePaths;
 
@@ -88,7 +88,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             return proxy.invokeSuper(obj, args);
         });
         context.put(name, enhancer.create());
-        LOGGER.info("Successfully created proxy for configuration bean with name: " + name);
+        LOGGER.info("Successfully created proxy for configuration bean with name: {}", name);
     }
 
     private void loadComponents() {
@@ -108,9 +108,12 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             unregistered.removeIf(this::registerComponent);
         } while (!unregistered.isEmpty() && unregistered.size() != size);
         if (!unregistered.isEmpty()) {
-            throw new BeanInitializingException(unregistered.stream().findFirst().get().getName(),
-                    "Circular dependency detected",
-                    "Use field or setters for autowire");
+            unregistered.stream().findFirst().ifPresent(aClass -> {
+                throw new BeanInitializingException(aClass.getName(),
+                        "Circular dependency detected",
+                        "Use field or setters for autowire");
+            });
+
         }
     }
 
@@ -180,7 +183,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 .orElse(null);
     }
 
-    private void loadConfigurations() throws RuntimeException {
+    private void loadConfigurations() {
         Arrays.stream(packagePaths)
                 .map(packagePath -> new Reflections(packagePath, Scanners.TypesAnnotated))
                 .flatMap(reflections -> reflections.getTypesAnnotatedWith(Configuration.class).stream())
@@ -196,8 +199,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
             var beanInstance = constructor.newInstance();
             String beanName = resolveBeanName(beanClass.getAnnotation(Configuration.class).value(), beanClass);
             context.put(beanName, beanInstance);
-            LOGGER.info("Configuration bean successfully created for class: %s with name %s"
-                    .formatted(beanClass.getName(), beanName));
+            LOGGER.info("Configuration bean successfully created for class: {} with name {}", beanClass.getName(), beanName);
         } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
                 IllegalAccessException e) {
             throw new BeanInitializingException(
@@ -216,8 +218,7 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
                 try {
                     Object bean = method.invoke(configurationBean);
                     context.put(beanName, bean);
-                    LOGGER.info("Configuration bean successfully created for method: %s with name %s"
-                            .formatted(method.getName(), beanName));
+                    LOGGER.info("Configuration bean successfully created for method: {} with name {}", method.getName(), beanName);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new BeanInitializingException(
                             configClass.getName(),
@@ -354,7 +355,6 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * @param parameterType {@link Class}
      * @return {@link Boolean}
      */
-
     private boolean multipleBeansExpected(Class<?> parameterType) {
         return List.class.isAssignableFrom(parameterType);
     }
