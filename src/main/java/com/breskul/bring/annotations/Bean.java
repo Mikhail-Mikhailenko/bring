@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 
 /**
- * Indicates that a method produces a bean which will be stored and managed in Bring container.
+ * Indicate method produces a bean which will be stored and managed in Bring container.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

@@ -64,6 +64,12 @@ To get javadoc, please do the follow commands:
 mvn -X clean javadoc:aggregate-jar
 ```
 
+You can find generated java doc by path: 
+
+```$xslt
+target/apidocs/index.html
+```
+
 ## How to use?
 
 ### List of features
