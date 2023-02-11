@@ -5,14 +5,14 @@ import com.breskul.bring.packages.autowired.correct.MessageServiceDemo;
 import com.breskul.bring.packages.autowired.correct.PrinterServiceDemo;
 import com.breskul.bring.exceptions.NoSuchBeanException;
 import com.breskul.bring.exceptions.NoUniqueBeanException;
-import com.breskul.bring.packages.autowired.injectBeansList.Constructor.DataBaseConstructor;
-import com.breskul.bring.packages.autowired.injectBeansList.Setter.DataBaseSetter;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.ListenerServiceConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.MessageServiceDemoConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaConstructorCorrect.PrinterServiceDemoConstructorInjec;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.ListenerServiceSetterInjection;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.MessageServiceDemoSetterInjection;
-import com.breskul.bring.packages.autowired.injectViaSetterCorrect.PrinterServiceDemoSetterInjection;
+import com.breskul.bring.packages.autowired.inject_beans_list.Constructor.DataBaseConstructor;
+import com.breskul.bring.packages.autowired.inject_beans_list.Setter.DataBaseSetter;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.ListenerServiceConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.MessageServiceDemoConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_constructor_correct.PrinterServiceDemoConstructorInjec;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.ListenerServiceSetterInjection;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.MessageServiceDemoSetterInjection;
+import com.breskul.bring.packages.autowired.inject_via_setter_correct.PrinterServiceDemoSetterInjection;
 import com.breskul.bring.packages.circular.correct.CircularComponent1;
 import com.breskul.bring.packages.circular.correct.CircularComponent2;
 import com.breskul.bring.packages.circular.correct.CircularComponent3;
@@ -231,9 +231,9 @@ public class ApplicationContextTest {
     @DisplayName("4. Inject Bean Via Setter Test")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectBeanViaSetterTest {
-        private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.injectViaSetterCorrect";
-        private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoSuchBean";
-        private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaSetterNoUniqueBean";
+        private static final String INJECT_VIA_SETTER_PACKAGE_NAME = "com.breskul.bring.packages.autowired.inject_via_setter_correct";
+        private static final String INJECT_VIA_SETTER_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.inject_via_setter_no_such_bean";
+        private static final String INJECT_VIA_SETTER_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.inject_via_setter_no_unique_bean";
         @Test
         @Order(1)
         @DisplayName("Beans are correctly injected via setter")
@@ -273,9 +273,9 @@ public class ApplicationContextTest {
     @DisplayName("5. Inject Beans via Constructor")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectBeansViaConstrucor {
-        private static final String INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT = "com.breskul.bring.packages.autowired.injectViaConstructorCorrect";
-        private static final String INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoSuchBean";
-        private static final String INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.injectViaConstructorNoUniqueBean";
+        private static final String INJECT_VIA_CONSTRUCTOR_BEAN_CORRECT = "com.breskul.bring.packages.autowired.inject_via_constructor_correct";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_SUCH_BEAN = "com.breskul.bring.packages.autowired.inject_via_constructor_no_such_bean";
+        private static final String INJECT_VIA_CONSTRUCTOR_NO_UNIQUE_BEAN = "com.breskul.bring.packages.autowired.inject_via_constructor_no_unique_bean";
         @Test
         @Order(1)
         @DisplayName("Beans are correctly injected via constructor")
@@ -316,11 +316,11 @@ public class ApplicationContextTest {
     @DisplayName("6. Inject List of Beans")
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class InjectListBeans{
-        private static final String INJECT_BEANS_VIA_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.Constructor";
+        private static final String INJECT_BEANS_VIA_CONSTRUCTOR = "com.breskul.bring.packages.autowired.inject_beans_list.Constructor";
 
-        private static final String INJECT_BEANS_VIA_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.Setter";
-        private static final String NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR = "com.breskul.bring.packages.autowired.injectBeansList.ConstructorNoSuchBean";
-        private static final String NO_SUCH_BEAN_EXCEPTION_SETTER = "com.breskul.bring.packages.autowired.injectBeansList.SetterNoSuchBean";
+        private static final String INJECT_BEANS_VIA_SETTER = "com.breskul.bring.packages.autowired.inject_beans_list.Setter";
+        private static final String NO_SUCH_BEAN_EXCEPTION_CONSTRUCTOR = "com.breskul.bring.packages.autowired.inject_beans_list.ConstructorNoSuchBean";
+        private static final String NO_SUCH_BEAN_EXCEPTION_SETTER = "com.breskul.bring.packages.autowired.inject_beans_list.SetterNoSuchBean";
 
         @Test
         @Order(1)
@@ -328,7 +328,7 @@ public class ApplicationContextTest {
         void injectListBeansViaConstructor() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_CONSTRUCTOR);
             DataBaseConstructor dataBaseConstructor = applicationContext.getBean(DataBaseConstructor.class);
-            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            assertEquals(3, dataBaseConstructor.getDatabases().size());
             dataBaseConstructor.connect();
 
         }
@@ -339,7 +339,7 @@ public class ApplicationContextTest {
         void injectListBeansViaSetter() {
             ApplicationContext applicationContext = new AnnotationConfigApplicationContext(INJECT_BEANS_VIA_SETTER);
             DataBaseSetter dataBaseConstructor = applicationContext.getBean(DataBaseSetter.class);
-            assertEquals(dataBaseConstructor.getDatabases().size(), 3);
+            assertEquals(3, dataBaseConstructor.getDatabases().size());
             dataBaseConstructor.connect();
 
         }
