@@ -57,8 +57,8 @@ public class AnnotationConfigApplicationContext implements ApplicationContext {
      * <p>It creates an instances of such classes and put them into context.</p>
      */
     private void initiateContext() {
-        loadComponents();
         loadConfigurations();
+        loadComponents();
         autoWireBeans();
         proxyConfigurations();
     }
